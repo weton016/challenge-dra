@@ -1,0 +1,13 @@
+# Decisões e desvios do design
+
+O design v1.0 foi registrado antes do código e permanece como histórico. Este arquivo registra as decisões da implementação.
+
+- **Monólito modular, duas instâncias:** regras puras em `ledger`, persistência em `postgres`, HTTP e despachante em `httpapi`. Não há Redis, broker nem coordenador distribuído adicional: a autoridade da concorrência é o PostgreSQL.
+- **Representação simplificada:** moeda única BRL; contas positivas são clientes, -1 a -32 são controles externos. Origem, destino e valor ficam no payload JSONB canônico da operação. Partidas usam sinal do delta e chave `(operation_id, account_id)`; uma transferência não aceita origem igual ao destino.
+- **Autenticação do protótipo:** uma chave de serviço identifica um chamador institucional autorizado a operar todas as contas. Não implementa autenticação de correntistas, permissões por conta nem múltiplos tenants. A chave de idempotência é global nesse domínio. Uma API pública de clientes exigiria autorização por conta e associação da identidade à chave antes de produção.
+- **Imutabilidade:** trigger recusa UPDATE/DELETE das partidas. O usuário local é dono do esquema para permitir migrações no Compose; não representa segregação de privilégios de produção. Em produção, migrações e execução precisam de papéis separados.
+- **Estornos:** IDs internos usam `refund:`; `:` não é permitido em IDs do cliente. Isso impede que o cliente ocupe previamente a identidade de um estorno. A operação original é bloqueada enquanto sua liquidação muda; compensação e estado terminal são atômicos.
+- **Integração externa:** simulador com banco separado; `reject:` no destinatário produz rejeição definitiva. Resposta perdida implica repetir o mesmo ID, nunca estornar por timeout. APPROVED é autorização local; PENDING/SETTLED/REVERSED informa a liquidação separadamente. A idempotência do destinatário é uma premissa da integração, não uma propriedade imposta pela rede.
+- **Limite numérico:** overflow de crédito causa negativa. Se um crédito de estorno encontrasse o limite de bigint, a transação seria revertida e a saída continuaria PENDING para intervenção; não há descarte nem saldo negativo. Limites comerciais inferiores a bigint são necessários em produção.
+- **Infraestrutura:** imagem Go de compilação obtida do espelho público ECR, devido a falhas de DNS do Docker Hub no ambiente. Execução em imagem scratch, usuário numérico não privilegiado e certificados CA. PostgreSQL 16, com fsync e synchronous_commit mantidos ligados.
+- **Qualidade:** cobertura é medida no código interno de produção, não em CLIs, scripts ou dependências. Mutação direcionada às regras monetárias, com escopo explícito; não é uma alegação de cobertura de mutação de todo o sistema.

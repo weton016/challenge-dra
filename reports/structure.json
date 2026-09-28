@@ -1,0 +1,183 @@
+{
+  "file_lines": {
+    "internal/httpapi/api.go": 194,
+    "internal/httpapi/worker.go": 61,
+    "internal/ledger/ledger.go": 86,
+    "internal/postgres/external.go": 121,
+    "internal/postgres/store.go": 199
+  },
+  "functions": [
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "Handler",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "write",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "failure",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "decode",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "transfer",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "receive",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "result",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "receipt",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "accountID",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "balance",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "cursor",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "statement",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "ready",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/httpapi/worker.go",
+      "Name": "DeliverOne",
+      "Complexity": 10
+    },
+    {
+      "File": "internal/httpapi/worker.go",
+      "Name": "RunWorker",
+      "Complexity": 7
+    },
+    {
+      "File": "internal/ledger/ledger.go",
+      "Name": "Validate",
+      "Complexity": 9
+    },
+    {
+      "File": "internal/ledger/ledger.go",
+      "Name": "Target",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/ledger/ledger.go",
+      "Name": "Decide",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/postgres/external.go",
+      "Name": "Claim",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/postgres/external.go",
+      "Name": "Settle",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/postgres/external.go",
+      "Name": "refund",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/external.go",
+      "Name": "Receipt",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/postgres/external.go",
+      "Name": "Receive",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Open",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Migrate",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Authorize",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "authorize",
+      "Complexity": 9
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "replay",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "move",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Result",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Balance",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Statement",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/postgres/store.go",
+      "Name": "Seed",
+      "Complexity": 5
+    }
+  ],
+  "package_lines": {
+    "internal/httpapi": 255,
+    "internal/ledger": 86,
+    "internal/postgres": 320
+  },
+  "passed": true,
+  "violations": []
+}

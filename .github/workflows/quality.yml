@@ -1,0 +1,26 @@
+name: quality
+on: [push, pull_request]
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pix
+          POSTGRES_PASSWORD: pix-local-only
+          POSTGRES_DB: pix_test
+        ports: ['55432:5432']
+        options: --health-cmd 'pg_isready -U pix -d pix_test' --health-interval 2s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+          cache: true
+      - run: make qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-reports
+          path: reports/

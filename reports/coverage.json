@@ -1,0 +1,6 @@
+{
+  "internal_statement_coverage": 92.01183431952663,
+  "ledger_statement_coverage": 100.0,
+  "threshold_internal": 85,
+  "threshold_ledger": 100
+}

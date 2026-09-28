@@ -1,0 +1,42 @@
+name: drac-pix
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pix
+      POSTGRES_PASSWORD: pix-local-only
+      POSTGRES_DB: pix
+    ports: ["127.0.0.1:55432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pix -d pix"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  api:
+    build: .
+    environment: &api-env
+      DATABASE_URL: postgres://pix:pix-local-only@db:5432/pix?sslmode=disable
+      API_KEY: local-development-key
+      EXTERNAL_URL: http://simulator:8080
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      db: {condition: service_healthy}
+  api2:
+    build: .
+    environment: *api-env
+    ports: ["127.0.0.1:8081:8080"]
+    depends_on:
+      db: {condition: service_healthy}
+  simulator:
+    build: .
+    environment:
+      DATABASE_URL: postgres://pix:pix-local-only@db:5432/pix_external?sslmode=disable
+      API_KEY: local-development-key
+      APP_MODE: simulator
+    depends_on:
+      db: {condition: service_healthy}
+volumes:
+  pgdata:

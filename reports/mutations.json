@@ -1,0 +1,52 @@
+{
+  "scope": "selected financial semantic mutants",
+  "total": 9,
+  "killed": 9,
+  "results": [
+    {
+      "name": "allow-overdraft",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/less_than_balance (0.00s)\n        ledger_test.go:29: got \"INSUFFICIENT_FUNDS\" want \"\"\n    --- FAIL: TestDecide/insufficient (0.00s)\n        ledger_test.go:29: got \"\" want \"INSUFFICIENT_FUNDS\"\n    --- FAIL: TestDecide/empty (0.00s)\n        ledger_test.go:29: got \"\" want \"INSUFFICIENT_FUNDS\"\n    --- FAIL: TestDecide/overflow (0.00s)\n        ledger_test.go:29: got \"INSUFFICIENT_FUNDS\" want \"BALANCE_OVERFLOW\"\n    --- FAIL: TestDecide/exact_upper_bound (0.00s)\n        ledger_test.go:29: got \"INSUFFICIENT_FUNDS\" want \"\"\nFAIL\n"
+    },
+    {
+      "name": "reject-exact-balance",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_balance (0.00s)\n        ledger_test.go:29: got \"INSUFFICIENT_FUNDS\" want \"\"\nFAIL\n"
+    },
+    {
+      "name": "miss-overflow",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_balance (0.00s)\n        ledger_test.go:29: got \"BALANCE_OVERFLOW\" want \"\"\n    --- FAIL: TestDecide/less_than_balance (0.00s)\n        ledger_test.go:29: got \"BALANCE_OVERFLOW\" want \"\"\n    --- FAIL: TestDecide/overflow (0.00s)\n        ledger_test.go:29: got \"\" want \"BALANCE_OVERFLOW\"\nFAIL\n"
+    },
+    {
+      "name": "reject-exact-limit",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_upper_bound (0.00s)\n        ledger_test.go:29: got \"BALANCE_OVERFLOW\" want \"\"\nFAIL\n"
+    },
+    {
+      "name": "allow-zero",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/zero (0.00s)\n        ledger_test.go:29: got \"\" want \"INVALID_AMOUNT\"\nFAIL\n"
+    },
+    {
+      "name": "allow-negative-source",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/negative_source (0.00s)\n        ledger_test.go:29: got \"INSUFFICIENT_FUNDS\" want \"INVALID_AMOUNT\"\nFAIL\n"
+    },
+    {
+      "name": "allow-negative-destination",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/negative_destination (0.00s)\n        ledger_test.go:29: got \"\" want \"INVALID_AMOUNT\"\nFAIL\n"
+    },
+    {
+      "name": "wrong-internal-target",
+      "status": "killed",
+      "evidence": "--- FAIL: TestRequestValidation (0.00s)\n    ledger_test.go:72: wrong internal target\nFAIL\n"
+    },
+    {
+      "name": "wrong-technical-shard",
+      "status": "killed",
+      "evidence": "--- FAIL: TestRequestValidation (0.00s)\n    ledger_test.go:63: wrong technical account\nFAIL\n"
+    }
+  ]
+}
