@@ -1,0 +1,10 @@
+.env
+.tools/
+tmp/
+bin/
+reports/*.out
+reports/*.html
+reports/*.log
+reports/*.jsonl
+*.test
+.DS_Store
