@@ -41,3 +41,9 @@ BEGIN RAISE EXCEPTION 'entries are immutable'; END $$;
 DROP TRIGGER IF EXISTS entries_immutable ON entries;
 CREATE TRIGGER entries_immutable BEFORE UPDATE OR DELETE ON entries
  FOR EACH ROW EXECUTE FUNCTION forbid_entry_change();
+ALTER TABLE accounts SET (
+ fillfactor=70,
+ autovacuum_vacuum_scale_factor=0,
+ autovacuum_vacuum_threshold=500,
+ autovacuum_vacuum_cost_delay=0
+);

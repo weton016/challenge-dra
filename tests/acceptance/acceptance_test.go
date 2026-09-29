@@ -41,7 +41,9 @@ func TestAcceptance(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Pool.Close()
-	w := &world{store: s, api: httpapi.API{Store: s, Key: "test-key-12345678", Timeout: 3 * time.Second}}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	w := &world{store: s, api: httpapi.API{Store: s, Batch: postgres.NewBatcher(ctx, s, 64, 2*time.Millisecond), Key: "test-key-12345678", Timeout: 3 * time.Second}}
 	w.servers = [2]*httptest.Server{httptest.NewServer(w.api.Handler(false)), httptest.NewServer(w.api.Handler(false))}
 	defer w.servers[0].Close()
 	defer w.servers[1].Close()

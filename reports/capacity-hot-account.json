@@ -1,0 +1,38 @@
+{
+  "measured_at": "2026-09-28T18:30:00-03:00",
+  "commit": "8067cc5",
+  "hardware": "Apple M3, 8 cores, 16 GB, Docker Desktop",
+  "postgres": "16.15, fsync=on, synchronous_commit=on, shared_buffers=128MB, wal_sync_method=fdatasync",
+  "apis": 2,
+  "pool_conns_per_api": 24,
+  "http_handler_timeout_ms": 250,
+  "accounts": 1000000,
+  "executor": "k6 constant-arrival-rate",
+  "path": "POST /transfers via Store.Authorize, one database transaction per request",
+  "batcher_on_request_path": false,
+  "windows": "12s to 45s; not the 10-minute protocol",
+  "hot_account": 1,
+  "runs": [
+    {"scenario": "cold", "offered_rps": 400, "duration_s": 12, "started_rps": 400.0, "approved_rps": 400.0, "http_error_rate": 0, "p99_ms": 15.1, "dropped": 0},
+    {"scenario": "cold", "offered_rps": 2000, "duration_s": 12, "started_rps": 1998.7, "approved_rps": 1998.7, "http_error_rate": 0, "p50_ms": 0.97, "p95_ms": 60.7, "p99_ms": 129.1, "max_ms": 212.3, "dropped": 0, "approved": 24000},
+    {"scenario": "hot-mixed", "offered_rps": 50, "duration_s": 12, "started_rps": 50.1, "approved_rps": 50.1, "http_error_rate": 0, "p99_ms": 18.8, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 100, "duration_s": 12, "started_rps": 100.0, "approved_rps": 100.0, "http_error_rate": 0, "p99_ms": 69.5, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 150, "duration_s": 12, "started_rps": 150.0, "approved_rps": 150.0, "http_error_rate": 0, "p99_ms": 24.6, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 200, "duration_s": 12, "started_rps": 200.0, "approved_rps": 200.0, "http_error_rate": 0, "p99_ms": 5.9, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 400, "duration_s": 45, "started_rps": 399.9, "approved_rps": 399.9, "http_error_rate": 0, "p99_ms": 5.9, "max_ms": 83.5, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 500, "duration_s": 20, "started_rps": 500.0, "approved_rps": 500.0, "http_error_rate": 0, "p99_ms": 6.6, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 600, "duration_s": 20, "started_rps": 599.9, "approved_rps": 599.9, "http_error_rate": 0, "p99_ms": 4.5, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 700, "duration_s": 20, "started_rps": 699.9, "approved_rps": 699.9, "http_error_rate": 0, "p99_ms": 11.0, "max_ms": 113.7, "dropped": 0},
+    {"scenario": "hot-mixed", "offered_rps": 800, "duration_s": 12, "started_rps": 783.5, "approved_rps": 526.6, "http_error_rate": 0.3279, "p99_ms": 315.6, "dropped": 0, "db_commits": 6468, "http_200": 6453},
+    {"scenario": "hot-in", "offered_rps": 2000, "duration_s": 12, "started_rps": 1953.5, "approved_rps": 19.0, "http_error_rate": 0.9903, "p99_ms": 350.3, "dropped": 60, "db_commits": 259, "http_200": 233},
+    {"scenario": "hot-out", "offered_rps": 2000, "duration_s": 12, "started_rps": 1956.9, "approved_rps": 17.3, "http_error_rate": 0.9912, "p99_ms": 341.8, "dropped": 5, "db_commits": 239, "http_200": 212},
+    {"scenario": "hot-mixed-warm", "offered_rps": 2000, "duration_s": 15, "started_rps": 1966.7, "approved_rps": 19.5, "http_error_rate": 0.9901, "p50_ms": 252.5, "p99_ms": 268.4, "p99_success_ms": 255.3, "dropped": 0, "db_commits": 321, "http_200": 297, "error": "OUTCOME_UNKNOWN_RETRY_SAME_ID"}
+  ],
+  "invariants_after_load": {
+    "balance_sum_equals_initial_sum": true,
+    "entry_delta_sum": 0,
+    "approved_without_two_entries": 0,
+    "account_1_negative_prefixes": 0,
+    "account_1_balance_matches_entries": true
+  }
+}

@@ -1,10 +1,12 @@
 {
   "file_lines": {
-    "internal/httpapi/api.go": 194,
+    "internal/httpapi/api.go": 202,
     "internal/httpapi/worker.go": 61,
     "internal/ledger/ledger.go": 86,
+    "internal/postgres/batch.go": 237,
+    "internal/postgres/batcher.go": 199,
     "internal/postgres/external.go": 121,
-    "internal/postgres/store.go": 199
+    "internal/postgres/store.go": 226
   },
   "functions": [
     {
@@ -31,6 +33,11 @@
       "File": "internal/httpapi/api.go",
       "Name": "transfer",
       "Complexity": 3
+    },
+    {
+      "File": "internal/httpapi/api.go",
+      "Name": "authorize",
+      "Complexity": 2
     },
     {
       "File": "internal/httpapi/api.go",
@@ -98,6 +105,101 @@
       "Complexity": 6
     },
     {
+      "File": "internal/postgres/batch.go",
+      "Name": "applyBatch",
+      "Complexity": 10
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "readBatch",
+      "Complexity": 9
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "decideAll",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "decide",
+      "Complexity": 7
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "post",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "write",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "insertOperations",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "insertMovements",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/postgres/batch.go",
+      "Name": "missingIDs",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "NewBatcher",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "Authorize",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "enqueue",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "wait",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "run",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "apply",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "logStats",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "noteMax",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "collect",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/postgres/batcher.go",
+      "Name": "drain",
+      "Complexity": 3
+    },
+    {
       "File": "internal/postgres/external.go",
       "Name": "Claim",
       "Complexity": 3
@@ -140,7 +242,7 @@
     {
       "File": "internal/postgres/store.go",
       "Name": "authorize",
-      "Complexity": 9
+      "Complexity": 10
     },
     {
       "File": "internal/postgres/store.go",
@@ -149,8 +251,13 @@
     },
     {
       "File": "internal/postgres/store.go",
+      "Name": "syncAccounts",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/postgres/store.go",
       "Name": "move",
-      "Complexity": 6
+      "Complexity": 7
     },
     {
       "File": "internal/postgres/store.go",
@@ -174,9 +281,9 @@
     }
   ],
   "package_lines": {
-    "internal/httpapi": 255,
+    "internal/httpapi": 263,
     "internal/ledger": 86,
-    "internal/postgres": 320
+    "internal/postgres": 783
   },
   "passed": true,
   "violations": []

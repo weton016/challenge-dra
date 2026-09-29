@@ -1,26 +1,54 @@
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
+import { Counter } from 'k6/metrics';
 
-const rate=Number(__ENV.RATE || 2000);
-const duration=__ENV.DURATION || '10m';
-const prefix=__ENV.RUN_ID || `load-${Date.now()}`;
-const urls=(__ENV.URLS || 'http://localhost:8080,http://localhost:8081').split(',');
-const key=__ENV.API_KEY || 'local-development-key';
-export const options={
- scenarios:{hot:{executor:'constant-arrival-rate',rate,timeUnit:'1s',duration,preAllocatedVUs:200,maxVUs:600}},
- thresholds:{http_req_duration:['p(99)<300'],http_req_failed:['rate==0'],checks:['rate==1'],dropped_iterations:['count==0']},
- summaryTrendStats:['avg','med','p(95)','p(99)','max']
+const http200 = new Counter('status_200');
+const http503 = new Counter('status_503');
+const httpOther = new Counter('status_other');
+
+const rate = Number(__ENV.RATE || 2000);
+const coldRate = Number(__ENV.COLD_RATE || 0);
+const duration = __ENV.DURATION || '10m';
+const prefix = __ENV.RUN_ID || `load-${Date.now()}`;
+const urls = (__ENV.URLS || 'http://localhost:8080,http://localhost:8081').split(',');
+const key = __ENV.API_KEY || 'local-development-key';
+const scenarios = {
+  hot: { executor: 'constant-arrival-rate', exec: 'hot', rate, timeUnit: '1s', duration, preAllocatedVUs: Math.max(rate * 2, 100), maxVUs: Math.max(rate * 2, 100) },
 };
-export default function(){
- const n=exec.scenario.iterationInTest;
- const peer=2+(n%999999);
- const mode=__ENV.MODE || 'mixed';
- const incoming=mode==='in' || (mode==='mixed' && n%2===0);
- const source=incoming?peer:1;
- const destination=incoming?1:peer;
- const body={transaction_id:`${prefix}-${n}`,source_id:source,destination_id:destination,amount_minor:1};
- const res=http.post(`${urls[n%urls.length]}/transfers`,JSON.stringify(body),{headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},timeout:'2s'});
- check(res,{'approved':r=>r.status===200 && r.json('decision')==='APPROVED'});
+if (coldRate > 0) {
+  scenarios.cold = { executor: 'constant-arrival-rate', exec: 'cold', rate: coldRate, timeUnit: '1s', duration, preAllocatedVUs: Math.max(coldRate * 4, 50), maxVUs: Math.max(coldRate * 4, 50) };
 }
-export function handleSummary(data){return {['reports/load-'+prefix+'.json']:JSON.stringify(data,null,2),stdout:JSON.stringify({run:prefix,metrics:data.metrics},null,2)+'\n'};}
+export const options = {
+  scenarios,
+  thresholds: { http_req_duration: ['p(99)<300'], http_req_failed: ['rate==0'], checks: ['rate==1'], dropped_iterations: ['count==0'] },
+  summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
+};
+
+function post(source, destination, scenario, n) {
+  const body = { transaction_id: `${prefix}-${scenario}-${n}`, source_id: source, destination_id: destination, amount_minor: 1 };
+  const res = http.post(`${urls[n % urls.length]}/transfers`, JSON.stringify(body), { headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, timeout: '3s' });
+  if (res.status === 200) http200.add(1);
+  else if (res.status === 503) http503.add(1);
+  else httpOther.add(1);
+  check(res, { approved: (r) => r.status === 200 && r.json('decision') === 'APPROVED' });
+}
+
+export function hot() {
+  const n = exec.scenario.iterationInTest;
+  const peer = 2 + (n % 999998);
+  const mode = __ENV.MODE || 'mixed';
+  const incoming = mode === 'in' || (mode === 'mixed' && n % 2 === 0);
+  const source = incoming ? peer : 1;
+  const destination = incoming ? 1 : peer;
+  post(source, destination, mode, n);
+}
+
+export function cold() {
+  const n = exec.scenario.iterationInTest;
+  post(10000 + (n % 400000), 500000 + (n % 400000), 'cold', n);
+}
+
+export function handleSummary(data) {
+  return { ['reports/load-' + prefix + '.json']: JSON.stringify(data, null, 2) };
+}

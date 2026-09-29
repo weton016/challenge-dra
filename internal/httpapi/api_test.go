@@ -88,7 +88,9 @@ func setup(t *testing.T) API {
 	if err = s.Seed(context.Background(), 3, 100); err != nil {
 		t.Fatal(err)
 	}
-	return API{Store: s, Key: "test-key-12345678", Timeout: time.Second}
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	return API{Store: s, Batch: postgres.NewBatcher(ctx, s, 64, 2*time.Millisecond), Key: "test-key-12345678", Timeout: time.Second}
 }
 
 func call(h http.Handler, method, path, body string) *httptest.ResponseRecorder {

@@ -16,6 +16,7 @@ import (
 
 type API struct {
 	Store   *postgres.Store
+	Batch   *postgres.Batcher
 	Key     string
 	Timeout time.Duration
 }
@@ -40,7 +41,7 @@ func (a API) Handler(simulator bool) http.Handler {
 		}
 		timeout := a.Timeout
 		if timeout == 0 {
-			timeout = 250 * time.Millisecond
+			timeout = 1500 * time.Millisecond
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), timeout)
 		defer cancel()
@@ -87,12 +88,19 @@ func (a API) transfer(w http.ResponseWriter, r *http.Request) {
 		failure(w, err)
 		return
 	}
-	result, err := a.Store.Authorize(r.Context(), input)
+	result, err := a.authorize(r.Context(), input)
 	if err != nil {
 		failure(w, err)
 		return
 	}
 	write(w, 200, result)
+}
+
+func (a API) authorize(ctx context.Context, input ledger.Request) (ledger.Result, error) {
+	if a.Batch != nil {
+		return a.Batch.Authorize(ctx, input)
+	}
+	return a.Store.Authorize(ctx, input)
 }
 
 func (a API) receive(w http.ResponseWriter, r *http.Request) {

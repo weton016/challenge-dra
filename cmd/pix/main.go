@@ -8,12 +8,33 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"dracma/pix/internal/httpapi"
 	"dracma/pix/internal/postgres"
 )
+
+func batchSettings() (int, time.Duration, error) {
+	size := 64
+	window := 15 * time.Millisecond
+	if value := os.Getenv("BATCH_SIZE"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 || parsed > 64 {
+			return 0, 0, errors.New("BATCH_SIZE must be from 1 to 64")
+		}
+		size = parsed
+	}
+	if value := os.Getenv("BATCH_WINDOW_MS"); value != "" {
+		parsed, err := strconv.Atoi(value)
+		if err != nil || parsed < 1 || parsed > 50 {
+			return 0, 0, errors.New("BATCH_WINDOW_MS must be from 1 to 50")
+		}
+		window = time.Duration(parsed) * time.Millisecond
+	}
+	return size, window, nil
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -44,6 +65,14 @@ func run() error {
 		return errors.New("API_KEY must have at least 16 characters")
 	}
 	api := httpapi.API{Store: store, Key: key}
+	if os.Getenv("APP_MODE") != "simulator" {
+		size, window, err := batchSettings()
+		if err != nil {
+			return err
+		}
+		api.Batch = postgres.NewBatcher(ctx, store, size, window)
+		slog.Info("batching", "size", size, "window", window)
+	}
 	if url := os.Getenv("EXTERNAL_URL"); url != "" {
 		go api.RunWorker(ctx, url)
 	}

@@ -2,25 +2,49 @@ name: drac-pix
 services:
   db:
     image: postgres:16-alpine
+    shm_size: 1gb
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - max_wal_size=4GB
+      - -c
+      - min_wal_size=1GB
+      - -c
+      - checkpoint_timeout=15min
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - autovacuum_naptime=5s
+    entrypoint: ["/bin/sh", "/wal-setup.sh"]
     environment:
       POSTGRES_USER: pix
       POSTGRES_PASSWORD: pix-local-only
       POSTGRES_DB: pix
+      POSTGRES_INITDB_ARGS: "--waldir=/var/lib/postgresql/wal"
     ports: ["127.0.0.1:55432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - pgwal:/var/lib/postgresql/wal
+      - ./scripts/wal-setup.sh:/wal-setup.sh:ro
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pix -d pix"]
       interval: 2s
       timeout: 2s
-      retries: 30
+      retries: 60
+      start_period: 120s
   api:
     build: .
     environment: &api-env
       DATABASE_URL: postgres://pix:pix-local-only@db:5432/pix?sslmode=disable
       API_KEY: local-development-key
       EXTERNAL_URL: http://simulator:8080
+      BATCH_SIZE: ${BATCH_SIZE:-64}
+      BATCH_WINDOW_MS: ${BATCH_WINDOW_MS:-15}
     ports: ["127.0.0.1:8080:8080"]
     depends_on:
       db: {condition: service_healthy}
@@ -40,3 +64,4 @@ services:
       db: {condition: service_healthy}
 volumes:
   pgdata:
+  pgwal:

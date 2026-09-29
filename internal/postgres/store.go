@@ -78,6 +78,9 @@ func authorize(ctx context.Context, tx pgx.Tx, r ledger.Request) (ledger.Result,
 	if tag.RowsAffected() == 0 {
 		return replay(ctx, tx, r)
 	}
+	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", int64(writerLock)); err != nil {
+		return ledger.Result{}, err
+	}
 	reason, err := move(ctx, tx, r)
 	if err != nil {
 		return ledger.Result{}, err
@@ -116,8 +119,24 @@ func replay(ctx context.Context, tx pgx.Tx, r ledger.Request) (ledger.Result, er
 	return out, nil
 }
 
+func syncAccounts(ctx context.Context, tx pgx.Tx, ids []int64) error {
+	_, err := tx.Exec(ctx, `UPDATE accounts a
+SET balance_minor=t.balance_after_minor, last_sequence=t.account_sequence
+FROM (
+ SELECT DISTINCT ON (account_id) account_id, account_sequence, balance_after_minor
+ FROM entries WHERE account_id = ANY($1)
+ ORDER BY account_id, account_sequence DESC
+) t
+WHERE a.id=t.account_id AND (a.balance_minor<>t.balance_after_minor OR a.last_sequence<>t.account_sequence)`, ids)
+	return err
+}
+
 func move(ctx context.Context, tx pgx.Tx, r ledger.Request) (string, error) {
-	rows, err := tx.Query(ctx, `SELECT id,balance_minor,last_sequence FROM accounts WHERE id=ANY($1) ORDER BY id FOR NO KEY UPDATE`, []int64{r.Source, r.Target()})
+	ids := []int64{r.Source, r.Target()}
+	if err := syncAccounts(ctx, tx, ids); err != nil {
+		return "", err
+	}
+	rows, err := tx.Query(ctx, `SELECT id,balance_minor,last_sequence FROM accounts WHERE id=ANY($1) ORDER BY id FOR NO KEY UPDATE`, ids)
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +176,15 @@ func (s *Store) Result(ctx context.Context, id string) (ledger.Result, error) {
 
 func (s *Store) Balance(ctx context.Context, id int64) (ledger.Account, error) {
 	var a ledger.Account
-	err := s.Pool.QueryRow(ctx, `SELECT id,balance_minor,last_sequence FROM accounts WHERE id=$1 AND id>0`, id).Scan(&a.ID, &a.Balance, &a.Sequence)
+	err := s.Pool.QueryRow(ctx, `SELECT a.id,
+COALESCE(t.balance_after_minor, a.balance_minor),
+COALESCE(t.account_sequence, a.last_sequence)
+FROM accounts a
+LEFT JOIN LATERAL (
+ SELECT balance_after_minor, account_sequence FROM entries e
+ WHERE e.account_id=a.id ORDER BY account_sequence DESC LIMIT 1
+) t ON true
+WHERE a.id=$1 AND a.id>0`, id).Scan(&a.ID, &a.Balance, &a.Sequence)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = ledger.ErrNotFound
 	}
