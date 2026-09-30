@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	queueSlots     = 4096
-	admissionLimit = 512
-	batchDeadline  = 1200 * time.Millisecond
+	queueSlots    = 4096
+	batchDeadline = 1200 * time.Millisecond
 )
 
 type answer struct {
@@ -70,11 +69,6 @@ func (b *Batcher) Authorize(ctx context.Context, r ledger.Request) (ledger.Resul
 }
 
 func (b *Batcher) enqueue(ctx context.Context, item pending) error {
-	// Reject before the request is accepted. A full queue has not been written.
-	if len(b.queue) >= admissionLimit {
-		b.stats.queueFull.Add(1)
-		return errors.New("authorization queue full; retry same id")
-	}
 	select {
 	case <-ctx.Done():
 		b.stats.timeoutBefore.Add(1)

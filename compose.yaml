@@ -19,24 +19,19 @@ services:
       - wal_buffers=16MB
       - -c
       - autovacuum_naptime=5s
-    entrypoint: ["/bin/sh", "/wal-setup.sh"]
     environment:
       POSTGRES_USER: pix
       POSTGRES_PASSWORD: pix-local-only
       POSTGRES_DB: pix
-      POSTGRES_INITDB_ARGS: "--waldir=/var/lib/postgresql/wal"
     ports: ["127.0.0.1:55432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - pgwal:/var/lib/postgresql/wal
-      - ./scripts/wal-setup.sh:/wal-setup.sh:ro
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pix -d pix"]
       interval: 2s
       timeout: 2s
-      retries: 60
-      start_period: 120s
+      retries: 30
   api:
     build: .
     environment: &api-env
@@ -64,4 +59,3 @@ services:
       db: {condition: service_healthy}
 volumes:
   pgdata:
-  pgwal:
