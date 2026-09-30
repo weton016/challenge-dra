@@ -11,8 +11,8 @@ def percent(items):
  total=sum(n for n,c in items)
  return 100*sum(n for n,c in items if c>0)/total if total else 0
 overall=percent(blocks.values())
-domain=percent(v for k,v in blocks.items() if '/internal/ledger/' in k)
-report={'internal_statement_coverage':overall,'ledger_statement_coverage':domain,'threshold_internal':85,'threshold_ledger':100}
+domain=percent(v for k,v in blocks.items() if '/internal/domain/' in k)
+report={'internal_statement_coverage':overall,'domain_statement_coverage':domain,'threshold_internal':85,'threshold_domain':100}
 (root/'reports/coverage.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report))
 raise SystemExit(0 if overall>=85 and domain==100 else 1)

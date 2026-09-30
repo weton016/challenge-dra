@@ -1,25 +1,25 @@
-# Histórico de uso de IA
+# AI usage history
 
-Registro resumido dos principais pedidos e decisões desta sessão; não é uma exportação literal completa. Não contém credenciais de serviços reais.
+A short record of the main requests and decisions in this session; it is not a complete literal export. It contains no credentials for real services.
 
-## Pedidos principais do candidato
+## Main candidate requests
 
-1. Analisar o desafio de um autorizador Pix e escolher arquitetura, linguagem e ferramentas; suporte a hot accounts é obrigatório.
-2. Avaliar a possibilidade de sustentar 2.000 requisições/s na mesma conta com p99 menor que 300 ms; explicar microlotes e coordenação distribuída.
-3. Comparar monólito e microserviços.
-4. Refazer o design em até quatro páginas cobrindo componentes, modelo de dados, concorrência, falhas, trade-offs e validações.
-5. Implementar o projeto com testes unitários, Gherkin, cobertura, mutação, complexidade ciclomática, limites de módulos, dependências, métricas, procedimentos de QA e testes finais.
-6. Continuar e concluir todo o trabalho.
+1. Analyze the Pix authorizer challenge and choose architecture, language, and tools; hot-account support is mandatory.
+2. Assess whether 2,000 requests/s on the same account with p99 under 300 ms is sustainable; explain microbatches and distributed coordination.
+3. Compare a monolith and microservices.
+4. Redo the design in at most four pages covering components, data model, concurrency, failures, trade-offs, and validations.
+5. Implement the project with unit tests, Gherkin, coverage, mutation, cyclomatic complexity, module limits, dependencies, metrics, QA procedures, and final tests.
+6. Continue and finish all of the work.
 
-## Uso da assistência
+## Use of assistance
 
-- Codex ajudou na elaboração do design e na escolha de Go/PostgreSQL com monólito modular.
-- O design inicial foi salvo e commitado antes do código. Microlotes permaneceram condicionados à medição do baseline.
-- A assistência escreveu código, testes, infraestrutura, scripts de carga/auditoria e documentação; executou os comandos no ambiente local.
-- A skill local `skills/pix-quality/SKILL.md`, descoberta por AGENTS.md, registra os gates pedidos pelo candidato. A skill Ponytail orientou evitar componentes desnecessários; skill-creator orientou a skill local; PDF orientou a renderização e inspeção do design.
-- A revisão identificou e corrigiu colisão potencial entre identidade de estorno e identidade de cliente, reservando `refund:`.
-- Os resultados são extraídos de execuções reais. Falhas de compilação, infraestrutura ou metas são registradas e corrigidas ou declaradas; nenhum benchmark é inferido apenas da arquitetura.
+- Codex helped draft the design and choose Go/PostgreSQL with a modular monolith.
+- The initial design was saved and committed before the code. Microbatches remained conditional on the baseline measurement.
+- The assistant wrote code, tests, infrastructure, load/audit scripts, and documentation; it ran the commands in the local environment.
+- The local skill `skills/pix-quality/SKILL.md`, discovered through AGENTS.md, records the gates requested by the candidate. The Ponytail skill guided avoiding unnecessary components; skill-creator guided the local skill; PDF guided rendering and inspecting the design.
+- Review found and fixed a potential collision between a reversal identity and a client identity by reserving `refund:`.
+- Results are taken from real runs. Compilation, infrastructure, or target failures are recorded and either fixed or stated; no benchmark is inferred from the architecture alone.
 
-## Responsabilidade na apresentação
+## Responsibility in the presentation
 
-O candidato deve revisar o código, entender READ COMMITTED e bloqueios ordenados, distinguir decisão financeira de erro técnico, explicar a fronteira de liquidação externa e reproduzir os comandos do README. A assistência não enviou e-mails aos avaliadores.
+The candidate must review the code, understand READ COMMITTED and ordered locks, distinguish a financial decision from a technical error, explain the external settlement boundary, and reproduce the README commands. The assistant did not email the evaluators.

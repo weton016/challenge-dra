@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"dracma/pix/internal/postgres"
+	"dracma/pix/internal/infrastructure/postgres"
 	"github.com/jackc/pgx/v5"
 )
 

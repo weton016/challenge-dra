@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"dracma/pix/internal/httpapi"
-	"dracma/pix/internal/postgres"
+	"dracma/pix/internal/infrastructure/postgres"
+	"dracma/pix/internal/presentation/httpapi"
 )
 
 func batchSettings() (int, time.Duration, error) {

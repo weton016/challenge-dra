@@ -105,12 +105,59 @@ func complexity(fn *ast.FuncDecl) int {
 	return n
 }
 
+func domainImport(dep string) bool {
+	return dep == "dracma/pix/internal/domain" || strings.HasPrefix(dep, "dracma/pix/internal/domain/")
+}
+
+func applicationImport(dep string) bool {
+	return domainImport(dep) || dep == "dracma/pix/internal/application" || strings.HasPrefix(dep, "dracma/pix/internal/application/")
+}
+
 func badDependency(path, dep string) bool {
+	external := strings.Contains(strings.Split(dep, "/")[0], ".") || strings.HasPrefix(dep, "dracma/")
+	if strings.Contains(path, "/application/") {
+		return !applicationImport(dep) && external
+	}
+	if strings.Contains(path, "/domain/") {
+		return external && !domainImport(dep)
+	}
 	if strings.Contains(path, "/ledger/") {
-		return strings.Contains(strings.Split(dep, "/")[0], ".") || strings.HasPrefix(dep, "dracma/")
+		return external && !domainImport(dep)
+	}
+	if strings.Contains(path, "/infrastructure/") {
+		return !infrastructureImport(dep)
+	}
+	if strings.Contains(path, "/presentation/") {
+		return !presentationImport(dep)
 	}
 	if strings.Contains(path, "/postgres/") {
-		return strings.Contains(dep, "/httpapi")
+		return strings.Contains(dep, "/httpapi") || strings.Contains(dep, "/presentation")
+	}
+	return false
+}
+
+func presentationImport(dep string) bool {
+	if infrastructureImport(dep) {
+		return true
+	}
+	return dep == "dracma/pix/internal/presentation" || strings.HasPrefix(dep, "dracma/pix/internal/presentation/")
+}
+
+func infrastructureImport(dep string) bool {
+	if !strings.Contains(strings.Split(dep, "/")[0], ".") && !strings.HasPrefix(dep, "dracma/") {
+		return true
+	}
+	if dep == "github.com/jackc/pgx/v5" || strings.HasPrefix(dep, "github.com/jackc/pgx/") {
+		return true
+	}
+	for _, prefix := range []string{
+		"dracma/pix/internal/domain",
+		"dracma/pix/internal/application",
+		"dracma/pix/internal/infrastructure",
+	} {
+		if dep == prefix || strings.HasPrefix(dep, prefix+"/") {
+			return true
+		}
 	}
 	return false
 }

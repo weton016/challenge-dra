@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"dracma/pix/internal/httpapi"
-	"dracma/pix/internal/ledger"
-	"dracma/pix/internal/postgres"
+	"dracma/pix/internal/application/dto"
+	"dracma/pix/internal/infrastructure/postgres"
+	"dracma/pix/internal/presentation/httpapi"
 	"github.com/cucumber/godog"
 )
 
@@ -24,7 +24,7 @@ type world struct {
 	servers          [2]*httptest.Server
 	sim              *httptest.Server
 	api              httpapi.API
-	last             ledger.Result
+	last             dto.TransferResult
 	status, approved int
 }
 
@@ -102,22 +102,22 @@ func (w *world) seed(amount int64) error {
 	if err := w.store.Migrate(ctx); err != nil {
 		return err
 	}
-	w.last = ledger.Result{}
+	w.last = dto.TransferResult{}
 	w.status = 0
 	w.approved = 0
 	return w.store.Seed(ctx, 3, amount)
 }
 
-func (w *world) send(r ledger.Request, index int) (ledger.Result, int, error) {
+func (w *world) send(r dto.TransferCommand, index int) (dto.TransferResult, int, error) {
 	body, _ := json.Marshal(r)
 	req, _ := http.NewRequest("POST", w.servers[index].URL+"/transfers", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key-12345678")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ledger.Result{}, 0, err
+		return dto.TransferResult{}, 0, err
 	}
 	defer res.Body.Close()
-	var result ledger.Result
+	var result dto.TransferResult
 	if res.StatusCode == 200 {
 		err = json.NewDecoder(res.Body).Decode(&result)
 	}
@@ -126,7 +126,7 @@ func (w *world) send(r ledger.Request, index int) (ledger.Result, int, error) {
 
 func (w *world) transfer(amount int64, id string) error {
 	var err error
-	w.last, w.status, err = w.send(ledger.Request{ID: id, Source: 1, Destination: 2, Amount: amount}, 0)
+	w.last, w.status, err = w.send(dto.TransferCommand{ID: id, Source: 1, Destination: 2, Amount: amount}, 0)
 	return err
 }
 
@@ -138,7 +138,7 @@ func (w *world) balance(want int64) error {
 		return err
 	}
 	defer res.Body.Close()
-	var a ledger.Account
+	var a dto.Balance
 	if err = json.NewDecoder(res.Body).Decode(&a); err != nil {
 		return err
 	}
@@ -162,13 +162,13 @@ func (w *world) entries(want int, id string) error {
 
 func (w *world) concurrent(count int, amount int64) error {
 	var wg sync.WaitGroup
-	results := make(chan ledger.Result, count)
+	results := make(chan dto.TransferResult, count)
 	errs := make(chan error, count)
 	for i := 0; i < count; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			r, status, e := w.send(ledger.Request{ID: fmt.Sprintf("parallel-%d", i), Source: 1, Destination: 2, Amount: amount}, i%2)
+			r, status, e := w.send(dto.TransferCommand{ID: fmt.Sprintf("parallel-%d", i), Source: 1, Destination: 2, Amount: amount}, i%2)
 			if e == nil && status != 200 {
 				e = fmt.Errorf("HTTP %d", status)
 			}
@@ -194,7 +194,7 @@ func (w *world) concurrent(count int, amount int64) error {
 
 func (w *world) external(amount int64) error {
 	var err error
-	w.last, w.status, err = w.send(ledger.Request{ID: "ext", Source: 1, External: "reject:recipient", Amount: amount}, 0)
+	w.last, w.status, err = w.send(dto.TransferCommand{ID: "ext", Source: 1, External: "reject:recipient", Amount: amount}, 0)
 	return err
 }
 

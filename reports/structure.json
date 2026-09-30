@@ -1,289 +1,837 @@
 {
   "file_lines": {
-    "internal/httpapi/api.go": 202,
-    "internal/httpapi/worker.go": 61,
-    "internal/ledger/ledger.go": 86,
-    "internal/postgres/batch.go": 237,
-    "internal/postgres/batcher.go": 199,
-    "internal/postgres/external.go": 121,
-    "internal/postgres/store.go": 226
+    "internal/application/dto/dto.go": 77,
+    "internal/application/port/port.go": 34,
+    "internal/application/usecase/authorize.go": 90,
+    "internal/application/usecase/query.go": 69,
+    "internal/application/usecase/receive.go": 65,
+    "internal/domain/aggregate/account.go": 73,
+    "internal/domain/aggregate/transfer.go": 172,
+    "internal/domain/entity/entry.go": 56,
+    "internal/domain/entity/statement.go": 31,
+    "internal/domain/errs/errors.go": 11,
+    "internal/domain/policy/policy.go": 27,
+    "internal/domain/repository/repository.go": 23,
+    "internal/domain/service/authorize.go": 35,
+    "internal/domain/valueobject/identity.go": 85,
+    "internal/domain/valueobject/money.go": 56,
+    "internal/domain/valueobject/outcome.go": 61,
+    "internal/infrastructure/postgres/account/repository.go": 64,
+    "internal/infrastructure/postgres/batch.go": 239,
+    "internal/infrastructure/postgres/batcher.go": 199,
+    "internal/infrastructure/postgres/codec/codec.go": 29,
+    "internal/infrastructure/postgres/external.go": 122,
+    "internal/infrastructure/postgres/receipt/repository.go": 47,
+    "internal/infrastructure/postgres/statement/repository.go": 42,
+    "internal/infrastructure/postgres/store.go": 228,
+    "internal/infrastructure/postgres/transfer/repository.go": 108,
+    "internal/presentation/httpapi/controller/account.go": 64,
+    "internal/presentation/httpapi/controller/health.go": 22,
+    "internal/presentation/httpapi/controller/simulator.go": 36,
+    "internal/presentation/httpapi/controller/transfer.go": 33,
+    "internal/presentation/httpapi/request/request.go": 65,
+    "internal/presentation/httpapi/response/response.go": 28,
+    "internal/presentation/httpapi/server.go": 53,
+    "internal/presentation/httpapi/worker.go": 61
   },
   "functions": [
     {
-      "File": "internal/httpapi/api.go",
-      "Name": "Handler",
-      "Complexity": 6
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "write",
-      "Complexity": 1
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "failure",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "decode",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "transfer",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "authorize",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "receive",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "result",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "receipt",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "accountID",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "balance",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "cursor",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "statement",
-      "Complexity": 5
-    },
-    {
-      "File": "internal/httpapi/api.go",
-      "Name": "ready",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/httpapi/worker.go",
-      "Name": "DeliverOne",
-      "Complexity": 10
-    },
-    {
-      "File": "internal/httpapi/worker.go",
-      "Name": "RunWorker",
-      "Complexity": 7
-    },
-    {
-      "File": "internal/ledger/ledger.go",
+      "File": "internal/application/dto/dto.go",
       "Name": "Validate",
-      "Complexity": 9
+      "Complexity": 1
     },
     {
-      "File": "internal/ledger/ledger.go",
+      "File": "internal/application/dto/dto.go",
       "Name": "Target",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/ledger/ledger.go",
-      "Name": "Decide",
-      "Complexity": 6
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "applyBatch",
-      "Complexity": 10
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "readBatch",
-      "Complexity": 9
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "decideAll",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "decide",
-      "Complexity": 7
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "post",
       "Complexity": 1
     },
     {
-      "File": "internal/postgres/batch.go",
-      "Name": "write",
-      "Complexity": 6
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "insertOperations",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "insertMovements",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/postgres/batch.go",
-      "Name": "missingIDs",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "NewBatcher",
-      "Complexity": 2
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "Authorize",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "enqueue",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "wait",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "run",
-      "Complexity": 5
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "apply",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "logStats",
+      "File": "internal/application/dto/dto.go",
+      "Name": "FromTransfer",
       "Complexity": 1
     },
     {
-      "File": "internal/postgres/batcher.go",
-      "Name": "noteMax",
-      "Complexity": 4
+      "File": "internal/application/dto/dto.go",
+      "Name": "FromAccount",
+      "Complexity": 1
     },
     {
-      "File": "internal/postgres/batcher.go",
-      "Name": "collect",
-      "Complexity": 6
-    },
-    {
-      "File": "internal/postgres/batcher.go",
-      "Name": "drain",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/postgres/external.go",
-      "Name": "Claim",
-      "Complexity": 3
-    },
-    {
-      "File": "internal/postgres/external.go",
-      "Name": "Settle",
-      "Complexity": 8
-    },
-    {
-      "File": "internal/postgres/external.go",
-      "Name": "refund",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/external.go",
-      "Name": "Receipt",
+      "File": "internal/application/dto/dto.go",
+      "Name": "FromStatement",
       "Complexity": 2
     },
     {
-      "File": "internal/postgres/external.go",
-      "Name": "Receive",
-      "Complexity": 8
-    },
-    {
-      "File": "internal/postgres/store.go",
-      "Name": "Open",
+      "File": "internal/application/usecase/authorize.go",
+      "Name": "Execute",
       "Complexity": 4
     },
     {
-      "File": "internal/postgres/store.go",
-      "Name": "Migrate",
-      "Complexity": 4
-    },
-    {
-      "File": "internal/postgres/store.go",
-      "Name": "Authorize",
-      "Complexity": 5
-    },
-    {
-      "File": "internal/postgres/store.go",
-      "Name": "authorize",
-      "Complexity": 10
-    },
-    {
-      "File": "internal/postgres/store.go",
+      "File": "internal/application/usecase/authorize.go",
       "Name": "replay",
       "Complexity": 4
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/application/usecase/authorize.go",
+      "Name": "decide",
+      "Complexity": 7
+    },
+    {
+      "File": "internal/application/usecase/authorize.go",
+      "Name": "account",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/application/usecase/authorize.go",
+      "Name": "missing",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/application/usecase/query.go",
+      "Name": "Execute",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/application/usecase/query.go",
+      "Name": "Execute",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/application/usecase/query.go",
+      "Name": "Execute",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/application/usecase/receive.go",
+      "Name": "Execute",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/application/usecase/receive.go",
+      "Name": "Execute",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "NewAccount",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "ID",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "Balance",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "Sequence",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "Currency",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "Debit",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "Credit",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/account.go",
+      "Name": "apply",
+      "Complexity": 7
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "NewInternalTransfer",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "NewExternalTransfer",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "ParseTransfer",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "parseExternal",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "RestoreTransfer",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Refund",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Usable",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "WithReason",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "AcceptReplay",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "samePayload",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "ID",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Source",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Destination",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "External",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Amount",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Decision",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Reason",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/aggregate/transfer.go",
+      "Name": "Settlement",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "NewEntry",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Record",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Transaction",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Account",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Delta",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Sequence",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Balance",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/entry.go",
+      "Name": "Opposite",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/entity/statement.go",
+      "Name": "NewStatement",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/entity/statement.go",
+      "Name": "Entries",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/statement.go",
+      "Name": "Until",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/entity/statement.go",
+      "Name": "Next",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/policy/policy.go",
+      "Name": "Decide",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/domain/policy/policy.go",
+      "Name": "Target",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/service/authorize.go",
+      "Name": "Authorize",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "NewTransactionID",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "RefundID",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "ParseTransactionID",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "NewClientID",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "NewTechnicalID",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "TechnicalID",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "Int64",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "IsClient",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "IsTechnical",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "NewExternalRef",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/domain/valueobject/identity.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "NewAmount",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "Minor",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "TryBalance",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "NewBalance",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "Minor",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "Add",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "NewCurrency",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "BRL",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/money.go",
+      "Name": "Equal",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "ParseDecision",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "ParseReason",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "ParseSettlement",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/domain/valueobject/outcome.go",
+      "Name": "String",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/account/repository.go",
+      "Name": "New",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/account/repository.go",
+      "Name": "FindAccount",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/account/repository.go",
+      "Name": "SaveAccount",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "applyBatch",
+      "Complexity": 10
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "readBatch",
+      "Complexity": 9
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "decideAll",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "decide",
+      "Complexity": 7
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "post",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "write",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "insertOperations",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "insertMovements",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/batch.go",
+      "Name": "missingIDs",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "NewBatcher",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "Authorize",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "enqueue",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "wait",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "run",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "apply",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "logStats",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "noteMax",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "collect",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/infrastructure/postgres/batcher.go",
+      "Name": "drain",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/codec/codec.go",
+      "Name": "RequestOf",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/infrastructure/postgres/codec/codec.go",
+      "Name": "DecodeTransfer",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/external.go",
+      "Name": "Claim",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/external.go",
+      "Name": "Settle",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/infrastructure/postgres/external.go",
+      "Name": "refund",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/external.go",
+      "Name": "Receipt",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/infrastructure/postgres/external.go",
+      "Name": "Receive",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/infrastructure/postgres/receipt/repository.go",
+      "Name": "New",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/receipt/repository.go",
+      "Name": "FindReceipt",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/receipt/repository.go",
+      "Name": "SaveReceipt",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/statement/repository.go",
+      "Name": "New",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/statement/repository.go",
+      "Name": "FindStatement",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/statement/repository.go",
+      "Name": "restoreEntry",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
+      "Name": "Open",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
+      "Name": "Migrate",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
+      "Name": "Authorize",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
+      "Name": "authorize",
+      "Complexity": 10
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
+      "Name": "replay",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "syncAccounts",
       "Complexity": 1
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "move",
       "Complexity": 7
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "Result",
       "Complexity": 2
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "Balance",
       "Complexity": 2
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "Statement",
       "Complexity": 6
     },
     {
-      "File": "internal/postgres/store.go",
+      "File": "internal/infrastructure/postgres/store.go",
       "Name": "Seed",
       "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "New",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "FindTransfer",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "Commit",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "SaveTransfer",
+      "Complexity": 8
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "requirePair",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "upsertOperation",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/infrastructure/postgres/transfer/repository.go",
+      "Name": "sameRequest",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/account.go",
+      "Name": "Balance",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/account.go",
+      "Name": "Statement",
+      "Complexity": 5
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/account.go",
+      "Name": "Get",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/health.go",
+      "Name": "Live",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/health.go",
+      "Name": "Ready",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/simulator.go",
+      "Name": "Receive",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/simulator.go",
+      "Name": "Receipt",
+      "Complexity": 2
+    },
+    {
+      "File": "internal/presentation/httpapi/controller/transfer.go",
+      "Name": "Post",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/presentation/httpapi/request/request.go",
+      "Name": "DecodeTransfer",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/presentation/httpapi/request/request.go",
+      "Name": "Validate",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/presentation/httpapi/request/request.go",
+      "Name": "Command",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/presentation/httpapi/request/request.go",
+      "Name": "ParseAccountID",
+      "Complexity": 3
+    },
+    {
+      "File": "internal/presentation/httpapi/request/request.go",
+      "Name": "ParseCursor",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/presentation/httpapi/response/response.go",
+      "Name": "Write",
+      "Complexity": 1
+    },
+    {
+      "File": "internal/presentation/httpapi/response/response.go",
+      "Name": "Fail",
+      "Complexity": 4
+    },
+    {
+      "File": "internal/presentation/httpapi/server.go",
+      "Name": "Handler",
+      "Complexity": 6
+    },
+    {
+      "File": "internal/presentation/httpapi/worker.go",
+      "Name": "DeliverOne",
+      "Complexity": 10
+    },
+    {
+      "File": "internal/presentation/httpapi/worker.go",
+      "Name": "RunWorker",
+      "Complexity": 7
     }
   ],
   "package_lines": {
-    "internal/httpapi": 263,
-    "internal/ledger": 86,
-    "internal/postgres": 783
+    "internal/application/dto": 77,
+    "internal/application/port": 34,
+    "internal/application/usecase": 224,
+    "internal/domain/aggregate": 245,
+    "internal/domain/entity": 87,
+    "internal/domain/errs": 11,
+    "internal/domain/policy": 27,
+    "internal/domain/repository": 23,
+    "internal/domain/service": 35,
+    "internal/domain/valueobject": 202,
+    "internal/infrastructure/postgres": 788,
+    "internal/infrastructure/postgres/account": 64,
+    "internal/infrastructure/postgres/codec": 29,
+    "internal/infrastructure/postgres/receipt": 47,
+    "internal/infrastructure/postgres/statement": 42,
+    "internal/infrastructure/postgres/transfer": 108,
+    "internal/presentation/httpapi": 114,
+    "internal/presentation/httpapi/controller": 155,
+    "internal/presentation/httpapi/request": 65,
+    "internal/presentation/httpapi/response": 28
   },
   "passed": true,
   "violations": []

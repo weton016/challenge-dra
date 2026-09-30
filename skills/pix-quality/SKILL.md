@@ -1,19 +1,19 @@
 ---
 name: pix-quality
-description: Implementar e revisar este autorizador Pix com testes financeiros, aceitação Gherkin, cobertura, mutação e gates de qualidade. Use ao alterar código neste repositório.
+description: Implement and review this Pix authorizer with financial tests, Gherkin acceptance, coverage, mutation, and quality gates. Use when changing code in this repository.
 ---
 
-# Qualidade do autorizador Pix
+# Pix authorizer quality
 
-Use `docs/implementation-plan.md` como checklist. Antes de concluir, execute `make qa` e os testes finais documentados no README. Registre falhas e limitações em `reports/`, sem reduzir limites para esconder regressões.
+Use `docs/implementation-plan.md` as the checklist. Before finishing, run `make qa` and the final tests documented in the README. Record failures and limitations in `reports/`, without lowering limits to hide regressions.
 
-- Testes unitários devem cobrir limites monetários, validação e decisões, incluindo valor exato do saldo e overflow.
-- Cenários `.feature` devem ser executados contra HTTP e PostgreSQL reais; documentação Gherkin isolada não basta.
-- Cobertura do código interno: >= 85%; domínio financeiro: 100% de statements. Reportar limites do que essa métrica mede.
-- Mutation testing: eliminar 100% dos mutantes financeiros selecionados; distinguir sobreviventes, erros de compilação e falhas de infraestrutura. A suíte selecionada não representa todos os mutantes possíveis.
-- Complexidade ciclomática máxima 15 por função; arquivos de produção <= 350 linhas e pacotes internos <= 1.200 linhas. Dividir por responsabilidade, sem criar abstrações só para satisfazer números.
-- Dependências: ledger usa apenas biblioteca padrão; postgres depende de ledger; HTTP depende de ledger/postgres; nenhum ciclo. Validar via `go list`, não só por desenho.
-- Executar gofmt, go vet, race detector, testes, cobertura, mutação e verificação estrutural. Guardar relatórios com data e commit.
-- Usar PostgreSQL real nos testes de concorrência, idempotência, falhas e auditoria. Nenhuma conta negativa, duas partidas por aprovação, nenhum efeito por negativa, um efeito por ID.
-- Teste final: subir Compose, verificar readiness, executar aceitação, falhas e carga, reconciliar operações, auditar saldo e histórico. Reportar p99 e erros juntos; a meta de 2.000 req/s só é atendida se medida.
-- Timeouts de commit são indeterminados; nunca convertê-los em negativas financeiras. Estorno externo exige rejeição definitiva e é atômico com o estado final.
+- Unit tests must cover monetary limits, validation, and decisions, including the exact balance amount and overflow.
+- `.feature` scenarios must run against real HTTP and PostgreSQL; isolated Gherkin documentation is not enough.
+- Internal code coverage: >= 85%; financial domain: 100% of statements. Report the limits of what that metric measures.
+- Mutation testing: kill 100% of the selected financial mutants; distinguish survivors, compilation errors, and infrastructure failures. The selected suite does not represent every possible mutant.
+- Maximum cyclomatic complexity of 15 per function; production files <= 350 lines and internal packages <= 1,200 lines. Split by responsibility, without creating abstractions only to satisfy the numbers.
+- Dependencies: packages under internal/domain use the standard library and import only other packages in that directory; the application depends only on the domain; infrastructure may use domain, application, postgres, and pgx, and does not import presentation; presentation uses application, domain, infrastructure, and postgres; postgres does not import presentation; no cycles. Validate with `go list`, not by design alone.
+- Run gofmt, go vet, the race detector, tests, coverage, mutation, and the structural check. Store reports with date and commit.
+- Use real PostgreSQL for concurrency, idempotency, failure, and audit tests. No negative account, two postings per approval, no effect on a decline, one effect per ID.
+- Final test: bring up Compose, check readiness, run acceptance, faults, and load, reconcile operations, and audit balance and history. Report p99 and errors together; the 2,000 req/s target is met only if measured.
+- Commit timeouts are indeterminate; never turn them into financial declines. An external reversal requires a definitive rejection and is atomic with the final state.

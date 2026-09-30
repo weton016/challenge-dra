@@ -1,4 +1,4 @@
-# Trabalho neste repositório
+# Work in this repository
 
-Leia e siga `skills/pix-quality/SKILL.md` antes de alterar código. O plano executável está em `docs/implementation-plan.md`; resultados reais ficam em `reports/`.
-Não declare uma verificação executada sem seu resultado. Preserve as invariantes financeiras e o histórico de commits. Mudanças no design devem ser registradas em `docs/decisions.md`.
+Read and follow `skills/pix-quality/SKILL.md` before changing code. The executable plan is in `docs/implementation-plan.md`; real results live in `reports/`.
+Do not claim a verification ran without its result. Preserve the financial invariants and the commit history. Design changes must be recorded in `docs/decisions.md`.
