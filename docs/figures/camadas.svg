@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" role="img">
+<style>
+  text { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; fill: #1c1917; }
+  .muted { fill: #57534e; }
+  .title { font-size: 18px; font-weight: 650; }
+  .sub { font-size: 12px; fill: #57534e; }
+  .axis { font-size: 12px; fill: #57534e; }
+  .label { font-size: 13px; font-weight: 600; }
+  .small { font-size: 12px; }
+</style>
+<rect width="720" height="420" fill="#f7f5f0"/>
+<text class="title" x="24" y="32">Camadas e quem pode importar quem</text>
+<text class="sub" x="24" y="54">A seta desce: quem está acima depende de quem está abaixo. O domínio não sobe.</text>
+<rect x="150" y="78" width="420" height="52" rx="8" fill="#1e3a5f"/>
+<text class="label" x="360" y="100" text-anchor="middle" fill="#fffdf8">Apresentação</text>
+<text class="small" x="360" y="118" text-anchor="middle" fill="#e7e5e4">internal/presentation/httpapi</text>
+<rect x="80" y="168" width="250" height="64" rx="8" fill="#fffdf8" stroke="#1e3a5f" stroke-width="1.5"/>
+<text class="label" x="205" y="194" text-anchor="middle">Aplicação</text>
+<text class="small muted" x="205" y="214" text-anchor="middle">usecase, dto, port</text>
+<rect x="390" y="168" width="250" height="64" rx="8" fill="#ffedd5" stroke="#9a3412"/>
+<text class="label" x="515" y="194" text-anchor="middle">Infraestrutura</text>
+<text class="small" x="515" y="214" text-anchor="middle">postgres, lote, outbox</text>
+<rect x="180" y="276" width="360" height="56" rx="8" fill="#dcfce7" stroke="#166534" stroke-width="1.5"/>
+<text class="label" x="360" y="300" text-anchor="middle">Domínio</text>
+<text class="small" x="360" y="318" text-anchor="middle">policy.Decide, dinheiro, transferência</text>
+<path d="M360 130 V150 H205 V168 M360 150 H515 V168 M205 232 V254 H360 V276 M515 232 V254 H360" fill="none" stroke="#1c1917" stroke-width="1.5"/>
+<text class="sub" x="24" y="368">POST /transfers entra no lote da infraestrutura e chama policy.Decide.</text>
+<text class="sub" x="24" y="388">Saldo, extrato e simulador passam pelos casos de uso. Infraestrutura não importa HTTP.</text>
+<text class="sub" x="24" y="408">Domínio: biblioteca padrão e os próprios pacotes.</text>
+</svg>

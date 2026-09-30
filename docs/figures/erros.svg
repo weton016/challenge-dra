@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="380" viewBox="0 0 720 380" role="img">
+<style>
+  text { font-family: "IBM Plex Sans", "Segoe UI", sans-serif; fill: #1c1917; }
+  .muted { fill: #57534e; }
+  .title { font-size: 18px; font-weight: 650; }
+  .sub { font-size: 12px; fill: #57534e; }
+  .axis { font-size: 12px; fill: #57534e; }
+  .label { font-size: 13px; font-weight: 600; }
+  .small { font-size: 12px; }
+</style>
+<rect width="720" height="380" fill="#f7f5f0"/>
+<text class="title" x="24" y="32">O que falhou nos 10 minutos</text>
+<text class="sub" x="24" y="54">Limiar do ensaio: zero 503, zero outro status, zero iteração descartada</text>
+<text class="label" x="24" y="96">HTTP 503</text><rect x="230" y="78" width="432.9" height="28" fill="#9f1239" rx="2"/><text class="label" x="668.9" y="98">13.176</text><text class="label" x="24" y="168">iterações descartadas</text><rect x="230" y="150" width="101.3" height="28" fill="#9a3412" rx="2"/><text class="label" x="337.3" y="170">3.083</text><text class="label" x="24" y="240">outros status HTTP</text><rect x="230" y="222" width="27.2" height="28" fill="#1e3a5f" rx="2"/><text class="label" x="263.2" y="242">829</text>
+<text class="sub" x="24" y="328">503 + outros = 14.005 checks reprovados (1,17% dos HTTP).</text>
+<text class="sub" x="24" y="348">Descarte é pedido que o k6 nem enviou. Fonte: reports/load-camadas-reset-10m.json.</text>
+</svg>
