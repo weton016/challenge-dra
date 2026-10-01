@@ -38,12 +38,14 @@ func TestAcceptance(t *testing.T) {
 	if address == "" {
 		t.Skip("TEST_TB_ADDRESS required")
 	}
-	l, err := tigerbeetle.Open(address)
+	l, err := tigerbeetle.Open(address, 2*time.Millisecond)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer l.Close()
-	if err = l.Bootstrap(context.Background()); err != nil {
+	boot, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err = l.Bootstrap(boot); err != nil {
 		t.Fatal(err)
 	}
 	w := &world{ledger: l, api: httpapi.API{Ledger: l, Key: "test-key-12345678", Timeout: 3 * time.Second}}

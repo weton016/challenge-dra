@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,12 +28,14 @@ func setup(t *testing.T) (*Ledger, int64) {
 	if address == "" {
 		t.Skip("TEST_TB_ADDRESS required")
 	}
-	l, err := Open(address)
+	l, err := Open(address, 2*time.Millisecond)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(l.Close)
-	if err = l.Bootstrap(context.Background()); err != nil {
+	boot, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err = l.Bootstrap(boot); err != nil {
 		t.Fatal(err)
 	}
 	var b [8]byte
@@ -394,16 +397,64 @@ func TestUnavailable(t *testing.T) {
 			t.Fatal(i, err)
 		}
 	}
-	if _, err := Open("no-port"); err == nil {
+	if _, err := Open("no-port", 0); err == nil {
 		t.Fatal("expected address error")
 	}
-	if _, err := Open("host.invalid:3000"); err == nil {
+	if _, err := Open("host.invalid:3000", 0); err == nil {
 		t.Fatal("expected resolve error")
 	}
 	slow, done := context.WithTimeout(context.Background(), time.Millisecond)
 	defer done()
 	<-slow.Done()
 	if _, err := l.Authorize(slow, pay); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal(err)
+	}
+}
+
+// Requests sharing a window keep separate outcomes: declines, approvals and
+// a linked chain in one TigerBeetle request do not affect each other.
+func TestBatchKeepsDecisionsIndependent(t *testing.T) {
+	l, base := setup(t)
+	l.batch.window = 20 * time.Millisecond
+	ctx := context.Background()
+	results := make(chan dto.TransferResult, 30)
+	var wg sync.WaitGroup
+	for i := range 30 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			external := ""
+			if i%3 == 0 {
+				external = "shop"
+			}
+			destination := base + 1
+			if external != "" {
+				destination = 0
+			}
+			got, err := l.Authorize(ctx, transfer(t, newID(), base, destination, external, 10))
+			if err != nil {
+				t.Error(err)
+			}
+			results <- got
+		}()
+	}
+	wg.Wait()
+	close(results)
+	approved := 0
+	for r := range results {
+		if r.Decision == "APPROVED" {
+			approved++
+		} else if r.Reason != "INSUFFICIENT_FUNDS" {
+			t.Fatal(r)
+		}
+	}
+	if b, _ := balance(t, l, base); approved != 10 || b != 0 {
+		t.Fatal(approved, b)
+	}
+	l.batch.window = time.Second
+	slow, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+	defer cancel()
+	if _, err := l.Authorize(slow, transfer(t, newID(), base+1, base, "", 1)); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatal(err)
 	}
 }

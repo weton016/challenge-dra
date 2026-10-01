@@ -35,7 +35,7 @@ func run() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	ledger, err := tigerbeetle.Open(os.Getenv("TB_ADDRESS"))
+	ledger, err := tigerbeetle.Open(os.Getenv("TB_ADDRESS"), 0)
 	if err != nil {
 		return err
 	}

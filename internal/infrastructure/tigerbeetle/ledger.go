@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"dracma/pix/internal/domain/errs"
 	"dracma/pix/internal/domain/valueobject"
@@ -53,6 +54,7 @@ var (
 
 type Ledger struct {
 	client tb.Client
+	batch  batcher
 	scan   struct {
 		sync.Mutex
 		cursor, oldest uint64
@@ -60,7 +62,8 @@ type Ledger struct {
 }
 
 // Open resolves host names because the TigerBeetle client only takes IPs.
-func Open(address string) (*Ledger, error) {
+// window > 0 holds creates that long to share one request.
+func Open(address string, window time.Duration) (*Ledger, error) {
 	addresses := []string{}
 	for _, raw := range strings.Split(address, ",") {
 		host, port, err := net.SplitHostPort(strings.TrimSpace(raw))
@@ -77,13 +80,18 @@ func Open(address string) (*Ledger, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Ledger{client: client}, nil
+	return &Ledger{client: client, batch: batcher{window: window}}, nil
 }
 
 func (l *Ledger) Close() { l.client.Close() }
 
+// Ping reads the treasury. A replica accepts connections while it is still
+// recovering; only a read through the state machine shows it can decide.
 func (l *Ledger) Ping(ctx context.Context) error {
-	_, err := call(ctx, func() (struct{}, error) { return struct{}{}, l.client.Nop() })
+	found, err := call(ctx, func() ([]tb.Account, error) { return l.client.LookupAccounts([]tb.Uint128{treasury}) })
+	if err == nil && len(found) == 0 {
+		err = errs.ErrNotFound
+	}
 	return err
 }
 
@@ -207,14 +215,6 @@ func (l *Ledger) Bootstrap(ctx context.Context) error {
 		return fmt.Errorf("mint: %s: %w", s, errs.ErrInvariant)
 	}
 	return nil
-}
-
-func (l *Ledger) create(ctx context.Context, transfers []tb.Transfer) ([]tb.CreateTransferResult, error) {
-	results, err := call(ctx, func() ([]tb.CreateTransferResult, error) { return l.client.CreateTransfers(transfers) })
-	if err == nil && len(results) != len(transfers) {
-		err = errs.ErrInvariant
-	}
-	return results, err
 }
 
 // lookup returns the transfers found, keyed by id. Chunks fit a reply in

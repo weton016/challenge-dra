@@ -15,6 +15,21 @@ import (
 	"dracma/pix/internal/presentation/httpapi"
 )
 
+// batchWindow is how long creates wait to share a TigerBeetle request. At
+// sub-millisecond latency the client alone sends about one transfer per
+// request, and the per-request cost then dominates the ledger's time.
+func batchWindow() (time.Duration, error) {
+	raw := os.Getenv("TB_BATCH_WINDOW")
+	if raw == "" {
+		return 5 * time.Millisecond, nil
+	}
+	window, err := time.ParseDuration(raw)
+	if err != nil || window < 0 || window > 50*time.Millisecond {
+		return 0, errors.New("TB_BATCH_WINDOW must be a duration from 0 to 50ms")
+	}
+	return window, nil
+}
+
 func main() {
 	if err := run(); err != nil {
 		slog.Error("exit", "error", err)
@@ -29,7 +44,11 @@ func run() error {
 	flag.Parse()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ledger, err := tigerbeetle.Open(os.Getenv("TB_ADDRESS"))
+	window, err := batchWindow()
+	if err != nil {
+		return err
+	}
+	ledger, err := tigerbeetle.Open(os.Getenv("TB_ADDRESS"), window)
 	if err != nil {
 		return err
 	}

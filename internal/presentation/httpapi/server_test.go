@@ -75,11 +75,13 @@ func open(t *testing.T) *tigerbeetle.Ledger {
 	if address == "" {
 		t.Skip("TEST_TB_ADDRESS required")
 	}
-	l, err := tigerbeetle.Open(address)
+	l, err := tigerbeetle.Open(address, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = l.Bootstrap(context.Background()); err != nil {
+	boot, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err = l.Bootstrap(boot); err != nil {
 		t.Fatal(err)
 	}
 	return l

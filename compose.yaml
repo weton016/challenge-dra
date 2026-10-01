@@ -16,7 +16,7 @@ services:
       - >-
         test -f /data/0_0.tigerbeetle ||
         /tigerbeetle format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle;
-        exec /tigerbeetle start --addresses=0.0.0.0:3000 --cache-grid=512MiB /data/0_0.tigerbeetle
+        exec /tigerbeetle start --addresses=0.0.0.0:3000 --cache-grid=2GiB /data/0_0.tigerbeetle
     ports: ["127.0.0.1:3000:3000"]
     volumes:
       - tbdata:/data
@@ -26,26 +26,32 @@ services:
     profiles: ["test"]
     command:
       - >-
+        rm -f /tmp/0_0.tigerbeetle &&
         /tigerbeetle format --development --cluster=0 --replica=0 --replica-count=1 /tmp/0_0.tigerbeetle &&
         exec /tigerbeetle start --development --addresses=0.0.0.0:3000 /tmp/0_0.tigerbeetle
     ports: ["127.0.0.1:3001:3000"]
   api:
     build: .
+    # The client links TigerBeetle's IO layer, which also needs io_uring.
+    security_opt: &uring ["seccomp=unconfined"]
     environment: &api-env
       TB_ADDRESS: tigerbeetle:3000
       API_KEY: local-development-key
       EXTERNAL_URL: http://simulator:8080
+      TB_BATCH_WINDOW: ${TB_BATCH_WINDOW:-5ms}
     ports: ["127.0.0.1:8080:8080"]
     depends_on:
       tigerbeetle: {condition: service_healthy}
   api2:
     build: .
+    security_opt: *uring
     environment: *api-env
     ports: ["127.0.0.1:8081:8080"]
     depends_on:
       tigerbeetle: {condition: service_healthy}
   simulator:
     build: .
+    security_opt: *uring
     environment:
       TB_ADDRESS: tigerbeetle:3000
       API_KEY: local-development-key

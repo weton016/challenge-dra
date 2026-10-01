@@ -37,13 +37,16 @@ func (l *Ledger) Authorize(ctx context.Context, t aggregate.Transfer) (dto.Trans
 	}
 }
 
+// chain is the transfer and, for an external send, its memos. An internal
+// transfer's whole payload is in fields TigerBeetle compares on a replay;
+// only the external reference needs the fingerprint. Leaving user_data_128
+// zero also spares an index insert of a random key per transfer.
 func chain(t aggregate.Transfer) []tb.Transfer {
 	head := tb.Transfer{
 		ID:              transferID(t.ID()),
 		DebitAccountID:  accountID(t.Source().Int64()),
 		CreditAccountID: accountID(t.Destination().Int64()),
 		Amount:          amountOf(t.Amount().Minor()),
-		UserData128:     tb.BytesToUint128(t.Fingerprint()),
 		Ledger:          ledgerBRL,
 		Code:            codeInternal,
 	}
@@ -51,6 +54,7 @@ func chain(t aggregate.Transfer) []tb.Transfer {
 	if ref == "" {
 		return []tb.Transfer{head}
 	}
+	head.UserData128 = tb.BytesToUint128(t.Fingerprint())
 	head.Code = codeExternal
 	head.Flags = tb.TransferFlags{Linked: true, Pending: true}.ToUint16()
 	head.UserData32 = uint32(len(ref))

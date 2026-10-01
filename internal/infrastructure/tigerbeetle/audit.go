@@ -13,6 +13,7 @@ type Report struct {
 	Accounts        int64 `json:"accounts"`
 	InvalidBalances int64 `json:"invalid_balances"`
 	Conservation    int64 `json:"conservation_error"`
+	HistoryRows     int64 `json:"history_rows"`
 	InvalidPrefixes int64 `json:"invalid_prefixes"`
 	PendingExternal int64 `json:"pending_external"`
 	Passed          bool  `json:"passed"`
@@ -87,6 +88,7 @@ func (l *Ledger) auditHistory(ctx context.Context, r *Report, id int64) error {
 		if len(page) == 0 {
 			break
 		}
+		r.HistoryRows += int64(len(page))
 		for _, b := range page {
 			if _, err := available(b); err != nil {
 				r.InvalidPrefixes++
