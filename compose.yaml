@@ -1,61 +1,56 @@
 name: drac-pix
+x-tigerbeetle: &tigerbeetle
+  image: ghcr.io/tigerbeetle/tigerbeetle:0.17.9
+  # io_uring is blocked by Docker's default seccomp profile.
+  security_opt: ["seccomp=unconfined"]
+  entrypoint: ["tini", "--", "sh", "-c"]
+  healthcheck:
+    test: ["CMD", "nc", "-z", "127.0.0.1", "3000"]
+    interval: 2s
+    timeout: 2s
+    retries: 60
 services:
-  db:
-    image: postgres:16-alpine
-    shm_size: 1gb
+  tigerbeetle:
+    <<: *tigerbeetle
     command:
-      - postgres
-      - -c
-      - shared_buffers=512MB
-      - -c
-      - max_wal_size=4GB
-      - -c
-      - min_wal_size=1GB
-      - -c
-      - checkpoint_timeout=15min
-      - -c
-      - checkpoint_completion_target=0.9
-      - -c
-      - wal_buffers=16MB
-      - -c
-      - autovacuum_naptime=5s
-    environment:
-      POSTGRES_USER: pix
-      POSTGRES_PASSWORD: pix-local-only
-      POSTGRES_DB: pix
-    ports: ["127.0.0.1:55432:5432"]
+      - >-
+        test -f /data/0_0.tigerbeetle ||
+        /tigerbeetle format --cluster=0 --replica=0 --replica-count=1 /data/0_0.tigerbeetle;
+        exec /tigerbeetle start --addresses=0.0.0.0:3000 --cache-grid=512MiB /data/0_0.tigerbeetle
+    ports: ["127.0.0.1:3000:3000"]
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pix -d pix"]
-      interval: 2s
-      timeout: 2s
-      retries: 30
+      - tbdata:/data
+  # Disposable cluster for tests: --development keeps it near 1.4 GiB.
+  tigerbeetle-test:
+    <<: *tigerbeetle
+    profiles: ["test"]
+    command:
+      - >-
+        /tigerbeetle format --development --cluster=0 --replica=0 --replica-count=1 /tmp/0_0.tigerbeetle &&
+        exec /tigerbeetle start --development --addresses=0.0.0.0:3000 /tmp/0_0.tigerbeetle
+    ports: ["127.0.0.1:3001:3000"]
   api:
     build: .
     environment: &api-env
-      DATABASE_URL: postgres://pix:pix-local-only@db:5432/pix?sslmode=disable
+      TB_ADDRESS: tigerbeetle:3000
       API_KEY: local-development-key
       EXTERNAL_URL: http://simulator:8080
-      BATCH_SIZE: ${BATCH_SIZE:-64}
-      BATCH_WINDOW_MS: ${BATCH_WINDOW_MS:-15}
     ports: ["127.0.0.1:8080:8080"]
     depends_on:
-      db: {condition: service_healthy}
+      tigerbeetle: {condition: service_healthy}
   api2:
     build: .
     environment: *api-env
     ports: ["127.0.0.1:8081:8080"]
     depends_on:
-      db: {condition: service_healthy}
+      tigerbeetle: {condition: service_healthy}
   simulator:
     build: .
     environment:
-      DATABASE_URL: postgres://pix:pix-local-only@db:5432/pix_external?sslmode=disable
+      TB_ADDRESS: tigerbeetle:3000
       API_KEY: local-development-key
       APP_MODE: simulator
     depends_on:
-      db: {condition: service_healthy}
+      tigerbeetle: {condition: service_healthy}
 volumes:
-  pgdata:
+  tbdata:

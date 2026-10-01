@@ -14,19 +14,19 @@ import (
 func TestQueries(t *testing.T) {
 	ctx := context.Background()
 	store := newMemory()
-	put(store, mustAccount(t, 1, 80, 4), mustAccount(t, 2, 0, 0))
-	approved, err := (AuthorizeTransfer{Transfers: store, Accounts: store}).Execute(ctx, dto.TransferCommand{ID: "saved", Source: 1, Destination: 2, Amount: 1})
+	put(store, mustAccount(t, 1, 79, 5), mustAccount(t, 2, 0, 0))
+	approved, err := (AuthorizeTransfer{Transfers: store}).Execute(ctx, dto.TransferCommand{ID: idOK, Source: 1, Destination: 2, Amount: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := (GetTransfer{Transfers: store}).Execute(ctx, "saved")
+	got, err := (GetTransfer{Transfers: store}).Execute(ctx, idOK)
 	if err != nil || got != approved {
 		t.Fatal(err, got)
 	}
 	if _, err = (GetTransfer{Transfers: store}).Execute(ctx, "bad id"); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal(err)
 	}
-	if _, err = (GetTransfer{Transfers: store}).Execute(ctx, "missing"); !errors.Is(err, errs.ErrNotFound) {
+	if _, err = (GetTransfer{Transfers: store}).Execute(ctx, idOut); !errors.Is(err, errs.ErrNotFound) {
 		t.Fatal(err)
 	}
 
@@ -69,7 +69,7 @@ func TestQueries(t *testing.T) {
 	if _, err = statement.Execute(ctx, 9, 0, 0); !errors.Is(err, errs.ErrNotFound) {
 		t.Fatal(err)
 	}
-	tx, err := valueobject.NewTransactionID("saved")
+	tx, err := valueobject.NewTransactionID(idOK)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestQueries(t *testing.T) {
 	}
 	store.rows = []entity.Entry{entry}
 	page, err = statement.Execute(ctx, 1, 0, 5)
-	if err != nil || len(page.Entries) != 1 || page.Entries[0].TransactionID != "saved" || page.Entries[0].Delta != -1 || page.Entries[0].Sequence != 5 || page.Entries[0].Balance != 79 || page.Next != 5 {
+	if err != nil || len(page.Entries) != 1 || page.Entries[0].TransactionID != idOK || page.Entries[0].Delta != -1 || page.Entries[0].Sequence != 5 || page.Entries[0].Balance != 79 || page.Next != 5 {
 		t.Fatal(err, page)
 	}
 	store.accountErr = errors.New("statement account")

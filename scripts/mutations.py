@@ -8,13 +8,16 @@ import json, os, pathlib, shutil, subprocess, tempfile
 root = pathlib.Path(__file__).resolve().parents[1]
 go = os.environ.get('GO', 'go')
 mutants = [
- ('allow-overdraft', 'source < amount', 'source > amount'),
- ('reject-exact-balance', 'source < amount', 'source <= amount'),
- ('miss-overflow', 'destination > math.MaxInt64-amount', 'destination < math.MaxInt64-amount'),
- ('reject-exact-limit', 'destination > math.MaxInt64-amount', 'destination >= math.MaxInt64-amount'),
- ('allow-zero', 'amount <= 0', 'amount < 0'),
- ('allow-negative-source', 'source < 0', 'source < -1'),
- ('allow-negative-destination', 'destination < 0', 'destination < -1'),
+ ('allow-overdraft', 'left.Sign() < 0', 'left.Sign() < -1'),
+ ('reject-exact-balance', 'left.Sign() < 0', 'left.Sign() <= 0'),
+ ('miss-overflow', '!left.IsInt64()', 'false'),
+ ('ignore-reserved', 'left.Sub(left, debitsPending)', '_ = debitsPending'),
+ ('add-posted-debits', 'Sub(creditsPosted, debitsPosted)', 'Add(creditsPosted, debitsPosted)'),
+ ('posted-debit-credits', 'case Posted:\n\t\tif debit {\n\t\t\treturn -amount', 'case Posted:\n\t\tif debit {\n\t\t\treturn amount'),
+ ('posted-credit-lost', 'return amount\n\tcase Reserved', 'return 0\n\tcase Reserved'),
+ ('reserve-credits', 'case Reserved:\n\t\tif debit {\n\t\t\treturn -amount', 'case Reserved:\n\t\tif debit {\n\t\t\treturn amount'),
+ ('capture-wrong-side', 'if !debit {', 'if debit {'),
+ ('release-wrong-side', 'case Released:\n\t\tif debit {', 'case Released:\n\t\tif !debit {'),
  ('wrong-internal-target', 'return destination', 'return source'),
  ('wrong-technical-shard', 'source%32 + 1', 'source%32 + 2'),
 ]

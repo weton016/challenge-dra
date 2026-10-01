@@ -32,14 +32,6 @@ func NewBalance(minor int64) (Balance, error) {
 
 func (b Balance) Minor() int64 { return b.minor }
 
-func Add(left, delta int64) (int64, bool) {
-	sum := left + delta
-	if (delta > 0 && sum < left) || (delta < 0 && sum > left) {
-		return 0, false
-	}
-	return sum, true
-}
-
 type Currency struct{ code string }
 
 func NewCurrency(code string) (Currency, error) {

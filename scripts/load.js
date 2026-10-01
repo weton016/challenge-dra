@@ -25,8 +25,16 @@ export const options = {
   summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
 };
 
+// RFC 4122 shaped: run start in ms, scenario nibble, iteration number.
+const run = Date.now().toString(16).padStart(12, '0').slice(-12);
+const scenarioNibble = { in: '1', out: '2', mixed: '3', cold: '4' };
+function uuid(scenario, n) {
+  const h = n.toString(16).padStart(17, '0');
+  return `${run.slice(0, 8)}-${run.slice(8)}-4${scenarioNibble[scenario]}${h.slice(0, 2)}-8${h.slice(2, 5)}-${h.slice(5)}`;
+}
+
 function post(source, destination, scenario, n) {
-  const body = { transaction_id: `${prefix}-${scenario}-${n}`, source_id: source, destination_id: destination, amount_minor: 1 };
+  const body = { transaction_id: uuid(scenario, n), source_id: source, destination_id: destination, amount_minor: 1 };
   const res = http.post(`${urls[n % urls.length]}/transfers`, JSON.stringify(body), { headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, timeout: '3s' });
   if (res.status === 200) http200.add(1);
   else if (res.status === 503) http503.add(1);

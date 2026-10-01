@@ -3,47 +3,50 @@ package acceptance
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"dracma/pix/internal/application/dto"
-	"dracma/pix/internal/infrastructure/postgres"
+	"dracma/pix/internal/infrastructure/tigerbeetle"
 	"dracma/pix/internal/presentation/httpapi"
 	"github.com/cucumber/godog"
 )
 
+// TigerBeetle cannot be truncated: each scenario gets new accounts
+// base and base+1, and each Gherkin key a new UUID.
 type world struct {
-	store            *postgres.Store
+	ledger           *tigerbeetle.Ledger
 	servers          [2]*httptest.Server
 	sim              *httptest.Server
 	api              httpapi.API
+	base             int64
+	ids              map[string]string
 	last             dto.TransferResult
 	status, approved int
 }
 
 func TestAcceptance(t *testing.T) {
-	url := os.Getenv("TEST_DATABASE_URL")
-	if url == "" {
-		t.Skip("TEST_DATABASE_URL required")
+	address := os.Getenv("TEST_TB_ADDRESS")
+	if address == "" {
+		t.Skip("TEST_TB_ADDRESS required")
 	}
-	if !strings.Contains(url, "/pix_test?") {
-		t.Fatal("requires isolated pix_test")
-	}
-	s, err := postgres.Open(context.Background(), url)
+	l, err := tigerbeetle.Open(address)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Pool.Close()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	w := &world{store: s, api: httpapi.API{Store: s, Batch: postgres.NewBatcher(ctx, s, 64, 2*time.Millisecond), Key: "test-key-12345678", Timeout: 3 * time.Second}}
+	defer l.Close()
+	if err = l.Bootstrap(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	w := &world{ledger: l, api: httpapi.API{Ledger: l, Key: "test-key-12345678", Timeout: 3 * time.Second}}
 	w.servers = [2]*httptest.Server{httptest.NewServer(w.api.Handler(false)), httptest.NewServer(w.api.Handler(false))}
 	defer w.servers[0].Close()
 	defer w.servers[1].Close()
@@ -76,9 +79,9 @@ func TestAcceptance(t *testing.T) {
 		sc.Step(`^envio (\d+) centavos para destino externo rejeitado$`, w.external)
 		sc.Step(`^processo a outbox e repito a rejeição$`, w.refund)
 		sc.Step(`^a liquidação é "([^"]*)"$`, func(state string) error {
-			r, e := s.Result(context.Background(), "ext")
-			if e != nil {
-				return e
+			var r dto.TransferResult
+			if err := w.get(fmt.Sprintf("/transfers/%s", w.id("ext")), &r); err != nil {
+				return err
 			}
 			if r.Settlement != state {
 				return fmt.Errorf("%+v", r)
@@ -91,21 +94,31 @@ func TestAcceptance(t *testing.T) {
 	}
 }
 
+func newID() string {
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	b[6] = b[6]&0x0f | 0x40
+	b[8] = b[8]&0x3f | 0x80
+	h := fmt.Sprintf("%x", b)
+	return h[:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:]
+}
+
+func (w *world) id(key string) string {
+	if w.ids[key] == "" {
+		w.ids[key] = newID()
+	}
+	return w.ids[key]
+}
+
 func (w *world) seed(amount int64) error {
-	ctx := context.Background()
-	if err := w.store.Migrate(ctx); err != nil {
-		return err
-	}
-	if _, err := w.store.Pool.Exec(ctx, `TRUNCATE outbox,entries,operations,external_receipts,accounts CASCADE`); err != nil {
-		return err
-	}
-	if err := w.store.Migrate(ctx); err != nil {
-		return err
-	}
+	var b [8]byte
+	_, _ = rand.Read(b[:])
+	w.base = int64(binary.LittleEndian.Uint64(b[:])>>4) | 1<<40
+	w.ids = map[string]string{}
 	w.last = dto.TransferResult{}
 	w.status = 0
 	w.approved = 0
-	return w.store.Seed(ctx, 3, amount)
+	return w.ledger.Seed(context.Background(), w.base, 2, amount)
 }
 
 func (w *world) send(r dto.TransferCommand, index int) (dto.TransferResult, int, error) {
@@ -124,22 +137,29 @@ func (w *world) send(r dto.TransferCommand, index int) (dto.TransferResult, int,
 	return result, res.StatusCode, err
 }
 
-func (w *world) transfer(amount int64, id string) error {
-	var err error
-	w.last, w.status, err = w.send(dto.TransferCommand{ID: id, Source: 1, Destination: 2, Amount: amount}, 0)
-	return err
-}
-
-func (w *world) balance(want int64) error {
-	req, _ := http.NewRequest("GET", w.servers[1].URL+"/accounts/1/balance", nil)
+func (w *world) get(path string, out any) error {
+	req, _ := http.NewRequest("GET", w.servers[1].URL+path, nil)
 	req.Header.Set("Authorization", "Bearer test-key-12345678")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return fmt.Errorf("GET %s: HTTP %d", path, res.StatusCode)
+	}
+	return json.NewDecoder(res.Body).Decode(out)
+}
+
+func (w *world) transfer(amount int64, key string) error {
+	var err error
+	w.last, w.status, err = w.send(dto.TransferCommand{ID: w.id(key), Source: w.base, Destination: w.base + 1, Amount: amount}, 0)
+	return err
+}
+
+func (w *world) balance(want int64) error {
 	var a dto.Balance
-	if err = json.NewDecoder(res.Body).Decode(&a); err != nil {
+	if err := w.get(fmt.Sprintf("/accounts/%d/balance", w.base), &a); err != nil {
 		return err
 	}
 	if a.Balance != want {
@@ -148,11 +168,19 @@ func (w *world) balance(want int64) error {
 	return nil
 }
 
-func (w *world) entries(want int, id string) error {
-	var n int
-	err := w.store.Pool.QueryRow(context.Background(), "SELECT count(*) FROM entries WHERE operation_id=$1", id).Scan(&n)
-	if err != nil {
-		return err
+// entries counts the postings of one transaction across both statements.
+func (w *world) entries(want int, key string) error {
+	n := 0
+	for _, account := range []int64{w.base, w.base + 1} {
+		var page dto.Statement
+		if err := w.get(fmt.Sprintf("/accounts/%d/statement", account), &page); err != nil {
+			return err
+		}
+		for _, e := range page.Entries {
+			if e.TransactionID == w.id(key) {
+				n++
+			}
+		}
 	}
 	if n != want {
 		return fmt.Errorf("entries %d", n)
@@ -168,7 +196,7 @@ func (w *world) concurrent(count int, amount int64) error {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			r, status, e := w.send(dto.TransferCommand{ID: fmt.Sprintf("parallel-%d", i), Source: 1, Destination: 2, Amount: amount}, i%2)
+			r, status, e := w.send(dto.TransferCommand{ID: newID(), Source: w.base, Destination: w.base + 1, Amount: amount}, i%2)
 			if e == nil && status != 200 {
 				e = fmt.Errorf("HTTP %d", status)
 			}
@@ -194,17 +222,25 @@ func (w *world) concurrent(count int, amount int64) error {
 
 func (w *world) external(amount int64) error {
 	var err error
-	w.last, w.status, err = w.send(dto.TransferCommand{ID: "ext", Source: 1, External: "reject:recipient", Amount: amount}, 0)
+	w.last, w.status, err = w.send(dto.TransferCommand{ID: w.id("ext"), Source: w.base, External: "reject:recipient", Amount: amount}, 0)
 	return err
 }
 
+// refund runs the worker's sweep until this reservation is settled, then
+// repeats the rejection, which must not refund twice.
 func (w *world) refund() error {
-	found, err := w.api.DeliverOne(context.Background(), w.sim.URL)
-	if err != nil {
-		return err
+	ctx := context.Background()
+	for range 1000 {
+		if _, err := w.api.Deliver(ctx, w.sim.URL); err != nil {
+			return err
+		}
+		var r dto.TransferResult
+		if err := w.get("/transfers/"+w.id("ext"), &r); err != nil {
+			return err
+		}
+		if r.Settlement != "PENDING" {
+			return w.ledger.Settle(ctx, w.id("ext"), false)
+		}
 	}
-	if !found {
-		return fmt.Errorf("missing outbox")
-	}
-	return w.store.Settle(context.Background(), "ext", false)
+	return fmt.Errorf("reservation never delivered")
 }

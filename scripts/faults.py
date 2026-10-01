@@ -21,10 +21,10 @@ def post(body, port=8080, timeout=2):
         c.close()
 
 def request(n, **extra):
-    r = dict(transaction_id=f'{PREFIX}-{n}', source_id=1, destination_id=2, amount_minor=1)
+    r = dict(transaction_id=str(uuid.uuid4()), label=f'{PREFIX}-{n}', source_id=1, destination_id=2, amount_minor=1)
     r.update(extra)
     manifest.append(r)
-    return r
+    return {k: v for k, v in r.items() if k != 'label'}
 
 def docker(*args):
     subprocess.run(['docker', 'compose', *args], check=True, stdout=subprocess.DEVNULL)
@@ -74,34 +74,34 @@ docker('up', '-d', 'api'); ready(8080)
 report['checks']['application_sigkill_recovered'] = True
 report['kill_initial_unknown'] = sum(s != 200 for s in initial)
 
-# A paused database models seconds of unresponsiveness, not a financial decline.
-r = request('paused-db')
-docker('pause', 'db')
+# A paused ledger models seconds of unresponsiveness, not a financial decline.
+r = request('paused-ledger')
+docker('pause', 'tigerbeetle')
 try:
     start = time.monotonic()
     status, result = post(r)
-    report['database_pause_response_ms'] = round((time.monotonic()-start)*1000, 2)
+    report['ledger_pause_response_ms'] = round((time.monotonic()-start)*1000, 2)
     assert status in (0, 503), (status, result)
     time.sleep(2)
 finally:
-    docker('unpause', 'db')
+    docker('unpause', 'tigerbeetle')
 ready(8080)
 assert post(r)[1].get('decision') == 'APPROVED'
-report['checks']['database_unresponsive_retry'] = True
+report['checks']['ledger_unresponsive_retry'] = True
 
-# Process outage exercises broken connections and durable recovery.
-docker('stop', '-t', '0', 'db')
-r = request('stopped-db')
+# A killed ledger process must keep every committed transfer on its volume.
+docker('stop', '-t', '0', 'tigerbeetle')
+r = request('stopped-ledger')
 status, _ = post(r)
 assert status in (0, 503)
-docker('up', '-d', 'db'); ready(8080); ready(8081)
+docker('up', '-d', '--wait', 'tigerbeetle'); ready(8080); ready(8081)
 assert post(r)[1].get('decision') == 'APPROVED'
-report['checks']['database_process_restart'] = True
+report['checks']['ledger_process_restart'] = True
 
-# Retry every known request twice and retain its exact payload for independent SQL reconciliation.
+# Retry every known request twice and retain its exact payload for reconciliation.
 for r in manifest:
     for port in (8080,8081):
-        status, result = post(r, port)
+        status, result = post({k: v for k, v in r.items() if k != 'label'}, port)
         assert status == 200 and result['decision'] == 'APPROVED', result
 Path('reports').mkdir(exist_ok=True)
 Path('reports/fault-manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')

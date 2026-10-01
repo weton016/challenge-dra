@@ -8,33 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
-	"dracma/pix/internal/infrastructure/postgres"
+	"dracma/pix/internal/infrastructure/tigerbeetle"
 	"dracma/pix/internal/presentation/httpapi"
 )
-
-func batchSettings() (int, time.Duration, error) {
-	size := 64
-	window := 15 * time.Millisecond
-	if value := os.Getenv("BATCH_SIZE"); value != "" {
-		parsed, err := strconv.Atoi(value)
-		if err != nil || parsed < 1 || parsed > 64 {
-			return 0, 0, errors.New("BATCH_SIZE must be from 1 to 64")
-		}
-		size = parsed
-	}
-	if value := os.Getenv("BATCH_WINDOW_MS"); value != "" {
-		parsed, err := strconv.Atoi(value)
-		if err != nil || parsed < 1 || parsed > 50 {
-			return 0, 0, errors.New("BATCH_WINDOW_MS must be from 1 to 50")
-		}
-		window = time.Duration(parsed) * time.Millisecond
-	}
-	return size, window, nil
-}
 
 func main() {
 	if err := run(); err != nil {
@@ -45,34 +24,29 @@ func main() {
 
 func run() error {
 	seed := flag.Int64("seed", 0, "create this many demo accounts")
+	first := flag.Int64("first", 1, "id of the first demo account")
 	balance := flag.Int64("balance", 1000000000000, "initial BRL cents for demo accounts")
 	flag.Parse()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	store, err := postgres.Open(ctx, os.Getenv("DATABASE_URL"))
+	ledger, err := tigerbeetle.Open(os.Getenv("TB_ADDRESS"))
 	if err != nil {
 		return err
 	}
-	defer store.Pool.Close()
-	if err = store.Migrate(ctx); err != nil {
+	defer ledger.Close()
+	boot, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	if err = ledger.Bootstrap(boot); err != nil {
 		return err
 	}
 	if *seed > 0 {
-		return store.Seed(ctx, *seed, *balance)
+		return ledger.Seed(ctx, *first, *seed, *balance)
 	}
 	key := os.Getenv("API_KEY")
 	if len(key) < 16 {
 		return errors.New("API_KEY must have at least 16 characters")
 	}
-	api := httpapi.API{Store: store, Key: key}
-	if os.Getenv("APP_MODE") != "simulator" {
-		size, window, err := batchSettings()
-		if err != nil {
-			return err
-		}
-		api.Batch = postgres.NewBatcher(ctx, store, size, window)
-		slog.Info("batching", "size", size, "window", window)
-	}
+	api := httpapi.API{Ledger: ledger, Key: key}
 	if url := os.Getenv("EXTERNAL_URL"); url != "" {
 		go api.RunWorker(ctx, url)
 	}

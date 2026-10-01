@@ -27,11 +27,12 @@ const (
 	ReasonInvalidAmount     Reason = "INVALID_AMOUNT"
 	ReasonInsufficientFunds Reason = "INSUFFICIENT_FUNDS"
 	ReasonBalanceOverflow   Reason = "BALANCE_OVERFLOW"
+	ReasonAccountNotFound   Reason = "ACCOUNT_NOT_FOUND"
 )
 
 func ParseReason(raw string) (Reason, error) {
 	switch Reason(raw) {
-	case ReasonNone, ReasonInvalidAmount, ReasonInsufficientFunds, ReasonBalanceOverflow:
+	case ReasonNone, ReasonInvalidAmount, ReasonInsufficientFunds, ReasonBalanceOverflow, ReasonAccountNotFound:
 		return Reason(raw), nil
 	default:
 		return "", errs.ErrInvalid

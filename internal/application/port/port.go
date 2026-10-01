@@ -6,13 +6,14 @@ import (
 	"dracma/pix/internal/application/dto"
 	"dracma/pix/internal/domain/aggregate"
 	"dracma/pix/internal/domain/entity"
-	"dracma/pix/internal/domain/service"
 	"dracma/pix/internal/domain/valueobject"
 )
 
+// TransferStore is the financial authority. Authorize decides and records in
+// one step; a replay of the same id and payload returns the stored outcome.
 type TransferStore interface {
-	FindTransfer(ctx context.Context, id valueobject.TransactionID) (aggregate.Transfer, error)
-	Commit(ctx context.Context, authorization service.Authorization) error
+	Authorize(ctx context.Context, transfer aggregate.Transfer) (dto.TransferResult, error)
+	FindTransfer(ctx context.Context, id valueobject.TransactionID) (dto.TransferResult, error)
 }
 
 type AccountStore interface {
@@ -23,12 +24,9 @@ type StatementStore interface {
 	FindStatement(ctx context.Context, id valueobject.AccountID, after, until int64) (entity.Statement, error)
 }
 
-type Receipt struct {
-	Transfer aggregate.Transfer
-	Result   dto.TransferResult
-}
-
+// ReceiptStore keeps the simulated institution's decisions. SaveReceipt
+// returns the stored result when the id already exists with the same payload.
 type ReceiptStore interface {
-	FindReceipt(ctx context.Context, id valueobject.TransactionID) (Receipt, error)
-	SaveReceipt(ctx context.Context, transfer aggregate.Transfer, result dto.TransferResult) error
+	FindReceipt(ctx context.Context, id valueobject.TransactionID) (dto.TransferResult, error)
+	SaveReceipt(ctx context.Context, transfer aggregate.Transfer, result dto.TransferResult) (dto.TransferResult, error)
 }

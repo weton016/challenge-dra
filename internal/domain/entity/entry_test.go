@@ -8,12 +8,10 @@ import (
 	"dracma/pix/internal/domain/valueobject"
 )
 
+const txID = "00000000-0000-4000-8000-0000000000e1"
+
 func TestEntry(t *testing.T) {
-	tx, err := valueobject.NewTransactionID("entry")
-	if err != nil {
-		t.Fatal(err)
-	}
-	other, err := valueobject.NewTransactionID("other")
+	tx, err := valueobject.NewTransactionID(txID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,15 +19,7 @@ func TestEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := valueobject.NewClientID(2)
-	if err != nil {
-		t.Fatal(err)
-	}
 	balance, err := valueobject.NewBalance(10)
-	if err != nil {
-		t.Fatal(err)
-	}
-	amount, err := valueobject.NewAmount(10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,16 +27,8 @@ func TestEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	credit, err := NewEntry(tx, second, 10, 4, balance)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = Opposite(entry, credit, amount); err != nil {
-		t.Fatal(err)
-	}
-	recorded := Record(tx, account, -10, 1, balance)
-	if recorded.Delta() != entry.Delta() || recorded.Transaction().String() != "entry" || recorded.Account().Int64() != 1 || recorded.Sequence() != 1 || recorded.Balance().Minor() != 10 {
-		t.Fatal("record")
+	if entry.Delta() != -10 || entry.Transaction().String() != txID || entry.Account().Int64() != 1 || entry.Sequence() != 1 || entry.Balance().Minor() != 10 {
+		t.Fatal("accessors")
 	}
 	if _, err = NewEntry(valueobject.TransactionID{}, account, -1, 1, balance); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal("tx")
@@ -60,30 +42,10 @@ func TestEntry(t *testing.T) {
 	if _, err = NewEntry(tx, account, -1, 0, balance); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal("sequence")
 	}
-	bad := entry
-	bad.delta = -9
-	if !errors.Is(Opposite(bad, credit, amount), errs.ErrInvariant) {
-		t.Fatal("debit delta")
-	}
-	badCredit := credit
-	badCredit.delta = 9
-	if !errors.Is(Opposite(entry, badCredit, amount), errs.ErrInvariant) {
-		t.Fatal("credit delta")
-	}
-	bad = entry
-	bad.transaction = other
-	if !errors.Is(Opposite(bad, credit, amount), errs.ErrInvariant) {
-		t.Fatal("transaction")
-	}
-	same := credit
-	same.account = entry.account
-	if !errors.Is(Opposite(entry, same, amount), errs.ErrInvariant) {
-		t.Fatal("same account")
-	}
 }
 
 func TestStatement(t *testing.T) {
-	tx, err := valueobject.NewTransactionID("s")
+	tx, err := valueobject.NewTransactionID(txID)
 	if err != nil {
 		t.Fatal(err)
 	}

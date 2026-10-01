@@ -130,9 +130,6 @@ func badDependency(path, dep string) bool {
 	if strings.Contains(path, "/presentation/") {
 		return !presentationImport(dep)
 	}
-	if strings.Contains(path, "/postgres/") {
-		return strings.Contains(dep, "/httpapi") || strings.Contains(dep, "/presentation")
-	}
 	return false
 }
 
@@ -147,7 +144,7 @@ func infrastructureImport(dep string) bool {
 	if !strings.Contains(strings.Split(dep, "/")[0], ".") && !strings.HasPrefix(dep, "dracma/") {
 		return true
 	}
-	if dep == "github.com/jackc/pgx/v5" || strings.HasPrefix(dep, "github.com/jackc/pgx/") {
+	if dep == "github.com/tigerbeetle/tigerbeetle-go" {
 		return true
 	}
 	for _, prefix := range []string{

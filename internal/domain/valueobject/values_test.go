@@ -2,7 +2,6 @@ package valueobject
 
 import (
 	"errors"
-	"math"
 	"strings"
 	"testing"
 
@@ -10,21 +9,29 @@ import (
 )
 
 func TestTransactionID(t *testing.T) {
-	id, err := NewTransactionID("abc_123-A")
-	if err != nil || id.String() != "abc_123-A" {
-		t.Fatal(err)
+	id, err := NewTransactionID("0190F3A2-7C1E-4D2B-9A6F-1234567890AB")
+	if err != nil || id.String() != "0190f3a2-7c1e-4d2b-9a6f-1234567890ab" {
+		t.Fatal(err, id)
 	}
-	for _, raw := range []string{"", "bad id", strings.Repeat("a", 65), "refund:abc"} {
+	for _, raw := range []string{
+		"", "bad id", "abc_123-A",
+		"0190f3a27c1e4d2b9a6f1234567890ab",
+		"0190f3a2-7c1e-4d2b-9a6f-1234567890ab0",
+		"g190f3a2-7c1e-4d2b-9a6f-1234567890ab",
+		"00000000-0000-0000-0000-000000000000",
+		"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+		"0190f3a2-7c1e-0d2b-9a6f-1234567890ab",
+		"0190f3a2-7c1e-9d2b-9a6f-1234567890ab",
+		"0190f3a2-7c1e-4d2b-7a6f-1234567890ab",
+		"0190f3a2-7c1e-4d2b-ca6f-1234567890ab",
+		"refund:0190f3a2-7c1e-4d2b-9a6f-1234567890ab",
+	} {
 		if _, err = NewTransactionID(raw); !errors.Is(err, errs.ErrInvalid) {
 			t.Fatalf("accepted %q", raw)
 		}
 	}
-	wide, err := NewTransactionID(strings.Repeat("a", 64))
-	if err != nil {
-		t.Fatal(err)
-	}
-	refund, err := RefundID(wide)
-	if err != nil || refund.String() != "refund:"+wide.String() {
+	refund, err := RefundID(id)
+	if err != nil || refund.String() != "refund:"+id.String() {
 		t.Fatal(err)
 	}
 	if _, err = RefundID(TransactionID{}); !errors.Is(err, errs.ErrInvalid) {
@@ -32,19 +39,6 @@ func TestTransactionID(t *testing.T) {
 	}
 	if _, err = RefundID(refund); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal("nested refund")
-	}
-	parsed, err := ParseTransactionID("abc_123-A")
-	if err != nil || parsed.String() != "abc_123-A" {
-		t.Fatal(err)
-	}
-	parsed, err = ParseTransactionID(refund.String())
-	if err != nil || parsed != refund {
-		t.Fatal(err, parsed)
-	}
-	for _, raw := range []string{"bad id", "refund:", "refund:bad id", "refund:refund:abc"} {
-		if _, err = ParseTransactionID(raw); !errors.Is(err, errs.ErrInvalid) {
-			t.Fatalf("parsed %q", raw)
-		}
 	}
 }
 
@@ -126,19 +120,6 @@ func TestMoneyAndCurrency(t *testing.T) {
 	if _, err = NewCurrency("USD"); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal("usd")
 	}
-	sum, ok := Add(5, 5)
-	if !ok || sum != 10 {
-		t.Fatal("add")
-	}
-	if _, ok = Add(math.MaxInt64, 1); ok {
-		t.Fatal("overflow")
-	}
-	if _, ok = Add(math.MinInt64, -1); ok {
-		t.Fatal("underflow")
-	}
-	if _, ok = Add(5, -1); !ok {
-		t.Fatal("debit")
-	}
 }
 
 func TestOutcomeParsing(t *testing.T) {
@@ -151,7 +132,7 @@ func TestOutcomeParsing(t *testing.T) {
 	if _, err := ParseDecision("MAYBE"); !errors.Is(err, errs.ErrInvalid) {
 		t.Fatal("decision")
 	}
-	for _, raw := range []string{string(ReasonNone), string(ReasonInvalidAmount), string(ReasonInsufficientFunds), string(ReasonBalanceOverflow)} {
+	for _, raw := range []string{string(ReasonNone), string(ReasonInvalidAmount), string(ReasonInsufficientFunds), string(ReasonBalanceOverflow), string(ReasonAccountNotFound)} {
 		reason, err := ParseReason(raw)
 		if err != nil || reason.String() != raw {
 			t.Fatal(raw, err)

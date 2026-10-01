@@ -12,38 +12,44 @@ import (
 	"dracma/pix/internal/domain/valueobject"
 )
 
+const (
+	idA = "00000000-0000-4000-8000-0000000000a1"
+	idB = "00000000-0000-4000-8000-0000000000b2"
+	idC = "00000000-0000-4000-8000-0000000000c3"
+)
+
 func TestValidateAndTarget(t *testing.T) {
-	internal := TransferCommand{ID: "abc_123-A", Source: 1, Destination: 2, Amount: 1}
+	internal := TransferCommand{ID: idA, Source: 1, Destination: 2, Amount: 1}
 	if err := internal.Validate(); err != nil {
 		t.Fatal(err)
 	}
 	if internal.Target() != 2 {
 		t.Fatal(internal.Target())
 	}
-	wide := TransferCommand{ID: strings.Repeat("a", 64), Source: 1, Destination: 2, Amount: math.MaxInt64}
+	wide := TransferCommand{ID: idB, Source: 1, Destination: 2, Amount: math.MaxInt64}
 	if err := wide.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	external := TransferCommand{ID: "ext", Source: 1, External: "shop", Amount: 10}
+	external := TransferCommand{ID: idB, Source: 1, External: "shop", Amount: 10}
 	if err := external.Validate(); err != nil || external.Target() != -2 {
 		t.Fatal(err, external.Target())
 	}
-	boundary := TransferCommand{ID: "edge", Source: 32, External: strings.Repeat("a", 140), Amount: 1}
+	boundary := TransferCommand{ID: idC, Source: 32, External: strings.Repeat("a", 140), Amount: 1}
 	if err := boundary.Validate(); err != nil || boundary.Target() != -1 {
 		t.Fatal(err, boundary.Target())
 	}
 	invalid := []TransferCommand{
 		{},
 		{ID: "bad id", Source: 1, Destination: 2, Amount: 1},
-		{ID: strings.Repeat("a", 65), Source: 1, Destination: 2, Amount: 1},
-		{ID: "a", Source: 0, Destination: 2, Amount: 1},
-		{ID: "a", Source: -1, Destination: 2, Amount: 1},
-		{ID: "a", Source: 1, Destination: 0, Amount: 1},
-		{ID: "a", Source: 1, Destination: 1, Amount: 1},
-		{ID: "a", Source: 1, Destination: 2, Amount: 0},
-		{ID: "a", Source: 1, Destination: 2, Amount: -1},
-		{ID: "a", Source: 1, Destination: 2, External: "shop", Amount: 1},
-		{ID: "a", Source: 1, External: strings.Repeat("a", 141), Amount: 1},
+		{ID: "abc_123-A", Source: 1, Destination: 2, Amount: 1},
+		{ID: idA, Source: 0, Destination: 2, Amount: 1},
+		{ID: idA, Source: -1, Destination: 2, Amount: 1},
+		{ID: idA, Source: 1, Destination: 0, Amount: 1},
+		{ID: idA, Source: 1, Destination: 1, Amount: 1},
+		{ID: idA, Source: 1, Destination: 2, Amount: 0},
+		{ID: idA, Source: 1, Destination: 2, Amount: -1},
+		{ID: idA, Source: 1, Destination: 2, External: "shop", Amount: 1},
+		{ID: idA, Source: 1, External: strings.Repeat("a", 141), Amount: 1},
 	}
 	for _, cmd := range invalid {
 		if err := cmd.Validate(); !errors.Is(err, errs.ErrInvalid) {
@@ -53,7 +59,7 @@ func TestValidateAndTarget(t *testing.T) {
 }
 
 func TestFromTransfer(t *testing.T) {
-	raw, err := aggregate.ParseTransfer("keep", 1, 2, "", 5)
+	raw, err := aggregate.ParseTransfer(idA, 1, 2, "", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,11 +68,11 @@ func TestFromTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := FromTransfer(declined)
-	want := TransferResult{ID: "keep", Decision: "DECLINED", Reason: "ACCOUNT_NOT_FOUND", Settlement: "INTERNAL"}
+	want := TransferResult{ID: idA, Decision: "DECLINED", Reason: "ACCOUNT_NOT_FOUND", Settlement: "INTERNAL"}
 	if got != want {
 		t.Fatal(got)
 	}
-	external, err := aggregate.ParseTransfer("out", 1, 0, "shop", 5)
+	external, err := aggregate.ParseTransfer(idB, 1, 0, "shop", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +81,7 @@ func TestFromTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = FromTransfer(pending)
-	want = TransferResult{ID: "out", Decision: "APPROVED", Settlement: "PENDING"}
+	want = TransferResult{ID: idB, Decision: "APPROVED", Settlement: "PENDING"}
 	if got != want {
 		t.Fatal(got)
 	}
@@ -120,7 +126,7 @@ func TestFromStatement(t *testing.T) {
 	if page.Until != 0 || page.Next != 0 || page.Entries == nil || len(page.Entries) != 0 {
 		t.Fatal(page)
 	}
-	tx, err := valueobject.NewTransactionID("saved")
+	tx, err := valueobject.NewTransactionID(idC)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +151,7 @@ func TestFromStatement(t *testing.T) {
 		t.Fatal(page)
 	}
 	got := page.Entries[0]
-	if got.TransactionID != "saved" || got.Delta != -1 || got.Sequence != 5 || got.Balance != 79 {
+	if got.TransactionID != idC || got.Delta != -1 || got.Sequence != 5 || got.Balance != 79 {
 		t.Fatal(got)
 	}
 }

@@ -9,22 +9,27 @@ import (
 	"dracma/pix/internal/domain/valueobject"
 )
 
+const (
+	idA = "00000000-0000-4000-8000-00000000000a"
+	idB = "00000000-0000-4000-8000-00000000000b"
+)
+
 func TestParseTransfer(t *testing.T) {
-	internal, err := ParseTransfer("abc_123-A", 1, 2, "", 1)
+	internal, err := ParseTransfer(idA, 1, 2, "", 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if internal.ID().String() != "abc_123-A" || internal.Source().Int64() != 1 || internal.Destination().Int64() != 2 {
+	if internal.ID().String() != idA || internal.Source().Int64() != 1 || internal.Destination().Int64() != 2 {
 		t.Fatal("internal")
 	}
 	if internal.Amount().Minor() != 1 || internal.External().String() != "" || internal.Decision() != "" || internal.Reason() != "" || internal.Settlement() != "" {
 		t.Fatal("payload")
 	}
-	external, err := ParseTransfer("ext", 1, 0, "recipient", 10)
+	external, err := ParseTransfer(idB, 1, 0, "recipient", 10)
 	if err != nil || external.Destination().Int64() != -2 || external.External().String() != "recipient" {
 		t.Fatal(err, external.Destination().Int64())
 	}
-	boundary, err := ParseTransfer("edge", 32, 0, "shop", 1)
+	boundary, err := ParseTransfer(idB, 32, 0, "shop", 1)
 	if err != nil || boundary.Destination().Int64() != -1 {
 		t.Fatal(err, boundary.Destination().Int64())
 	}
@@ -36,14 +41,13 @@ func TestParseTransfer(t *testing.T) {
 	}{
 		{"", 1, 2, "", 1},
 		{"bad id", 1, 2, "", 1},
-		{strings.Repeat("a", 65), 1, 2, "", 1},
-		{"a", 0, 2, "", 1},
-		{"a", 1, 0, "", 1},
-		{"a", 1, 1, "", 1},
-		{"a", 1, 2, "", 0},
-		{"a", 1, 2, "", -1},
-		{"a", 1, 2, "x", 1},
-		{"a", 1, 0, strings.Repeat("a", 141), 1},
+		{idA, 0, 2, "", 1},
+		{idA, 1, 0, "", 1},
+		{idA, 1, 1, "", 1},
+		{idA, 1, 2, "", 0},
+		{idA, 1, 2, "", -1},
+		{idA, 1, 2, "x", 1},
+		{idA, 1, 0, strings.Repeat("a", 141), 1},
 	}
 	for _, raw := range invalid {
 		if _, err = ParseTransfer(raw.id, raw.source, raw.destination, raw.external, raw.amount); !errors.Is(err, errs.ErrInvalid) {
@@ -53,7 +57,7 @@ func TestParseTransfer(t *testing.T) {
 }
 
 func TestTransferConstructors(t *testing.T) {
-	id := mustID(t, "id")
+	id := mustID(t, idA)
 	amount := mustAmount(t, 1)
 	client := mustClient(t, 1)
 	other := mustClient(t, 2)
@@ -86,7 +90,7 @@ func TestTransferConstructors(t *testing.T) {
 }
 
 func TestRestoreTransfer(t *testing.T) {
-	internal, err := ParseTransfer("keep", 1, 2, "", 5)
+	internal, err := ParseTransfer(idA, 1, 2, "", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +98,7 @@ func TestRestoreTransfer(t *testing.T) {
 	if err != nil || restored.Decision().String() != "DECLINED" || restored.Reason().String() != "ACCOUNT_NOT_FOUND" || restored.Settlement().String() != "INTERNAL" {
 		t.Fatal(err, restored.Decision(), restored.Reason(), restored.Settlement())
 	}
-	external, err := ParseTransfer("out", 1, 0, "shop", 5)
+	external, err := ParseTransfer(idB, 1, 0, "shop", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,59 +116,29 @@ func TestRestoreTransfer(t *testing.T) {
 	}
 }
 
-func TestRefundAndReplay(t *testing.T) {
-	internal, err := ParseTransfer("in", 1, 2, "", 5)
+func TestFingerprint(t *testing.T) {
+	external, err := ParseTransfer(idA, 1, 0, "shop", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = internal.Refund(); !errors.Is(err, errs.ErrInvalid) {
-		t.Fatal("internal refund")
-	}
-	external, err := ParseTransfer("pay", 1, 0, "shop", 5)
+	other, err := ParseTransfer(idB, 1, 0, "shop", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
-	refund, err := external.Refund()
-	if err != nil {
-		t.Fatal(err)
+	if external.Fingerprint() != other.Fingerprint() {
+		t.Fatal("the id is not part of the payload")
 	}
-	if refund.ID().String() != "refund:pay" || !refund.Source().IsTechnical() || refund.Destination().Int64() != 1 || refund.Amount().Minor() != 5 {
-		t.Fatalf("%s %d -> %d", refund.ID(), refund.Source().Int64(), refund.Destination().Int64())
-	}
-	if _, err = valueobject.NewTransactionID(refund.ID().String()); !errors.Is(err, errs.ErrInvalid) {
-		t.Fatal("client id occupied the refund")
-	}
-	ref, err := valueobject.NewExternalRef("shop")
-	if err != nil {
-		t.Fatal(err)
-	}
-	bare := Transfer{external: ref}
-	if _, err = bare.Refund(); !errors.Is(err, errs.ErrInvalid) {
-		t.Fatal("empty id")
-	}
-	again := refund
-	again.external = ref
-	if _, err = again.Refund(); !errors.Is(err, errs.ErrInvalid) {
-		t.Fatal("second refund")
-	}
-	if err = external.AcceptReplay(external); err != nil {
-		t.Fatal(err)
-	}
-	other, err := ParseTransfer("other", 1, 0, "shop", 5)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !errors.Is(external.AcceptReplay(other), errs.ErrNotFound) {
-		t.Fatal("different id")
+	if external.Fingerprint() == ([16]byte{}) {
+		t.Fatal("empty fingerprint")
 	}
 	changed := external
 	changed.source = mustClient(t, 4)
-	if !errors.Is(external.AcceptReplay(changed), errs.ErrConflict) {
+	if external.Fingerprint() == changed.Fingerprint() {
 		t.Fatal("source")
 	}
 	changed = external
 	changed.destination = mustClient(t, 3)
-	if !errors.Is(external.AcceptReplay(changed), errs.ErrConflict) {
+	if external.Fingerprint() == changed.Fingerprint() {
 		t.Fatal("destination")
 	}
 	changed = external
@@ -172,42 +146,18 @@ func TestRefundAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !errors.Is(external.AcceptReplay(changed), errs.ErrConflict) {
+	if external.Fingerprint() == changed.Fingerprint() {
 		t.Fatal("external")
 	}
 	changed = external
 	changed.amount = mustAmount(t, 6)
-	if !errors.Is(external.AcceptReplay(changed), errs.ErrConflict) {
+	if external.Fingerprint() == changed.Fingerprint() {
 		t.Fatal("amount")
 	}
 }
 
-func TestUsable(t *testing.T) {
-	transfer, err := ParseTransfer("ok", 1, 2, "", 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	source := mustAccount(t, 1, 10, 0)
-	destination := mustAccount(t, 2, 0, 0)
-	if err = transfer.Usable(source, destination); err != nil {
-		t.Fatal(err)
-	}
-	if !errors.Is(transfer.Usable(Account{}, destination), errs.ErrInvalid) {
-		t.Fatal("source currency")
-	}
-	if !errors.Is(transfer.Usable(source, Account{}), errs.ErrInvalid) {
-		t.Fatal("destination currency")
-	}
-	if !errors.Is(transfer.Usable(mustAccount(t, 3, 10, 0), destination), errs.ErrInvalid) {
-		t.Fatal("source id")
-	}
-	if !errors.Is(transfer.Usable(source, mustAccount(t, 4, 0, 0)), errs.ErrInvalid) {
-		t.Fatal("destination id")
-	}
-}
-
 func TestWithReason(t *testing.T) {
-	internal, err := ParseTransfer("in", 1, 2, "", 5)
+	internal, err := ParseTransfer(idA, 1, 2, "", 5)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +174,7 @@ func TestWithReason(t *testing.T) {
 			t.Fatal(reason, declined.Decision(), declined.Settlement())
 		}
 	}
-	external, err := ParseTransfer("out", 1, 0, "shop", 5)
+	external, err := ParseTransfer(idB, 1, 0, "shop", 5)
 	if err != nil {
 		t.Fatal(err)
 	}

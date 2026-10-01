@@ -4,67 +4,71 @@ import (
 	"context"
 
 	"dracma/pix/internal/application/dto"
-	"dracma/pix/internal/application/port"
 	"dracma/pix/internal/domain/aggregate"
 	"dracma/pix/internal/domain/entity"
 	"dracma/pix/internal/domain/errs"
-	"dracma/pix/internal/domain/service"
 	"dracma/pix/internal/domain/valueobject"
 )
 
+type stored struct {
+	fingerprint [16]byte
+	result      dto.TransferResult
+}
+
+// memory is a fake authority: it approves every new id and replays by fingerprint.
 type memory struct {
-	accounts         map[int64]aggregate.Account
-	transfers        map[string]aggregate.Transfer
-	receipts         map[string]port.Receipt
-	rows             []entity.Entry
-	seenUntil        int64
-	accountErr       error
-	failAccountAfter int
-	accountCalls     int
-	transferErr      error
-	commitErr        error
-	statementErr     error
-	receiptErr       error
-	receiptSaveErr   error
-	commits          int
+	accounts     map[int64]aggregate.Account
+	transfers    map[string]stored
+	receipts     map[string]stored
+	rows         []entity.Entry
+	seenUntil    int64
+	accountErr   error
+	transferErr  error
+	statementErr error
+	receiptErr   error
+	authorized   int
 }
 
 func newMemory() *memory {
 	return &memory{
 		accounts:  map[int64]aggregate.Account{},
-		transfers: map[string]aggregate.Transfer{},
-		receipts:  map[string]port.Receipt{},
+		transfers: map[string]stored{},
+		receipts:  map[string]stored{},
 	}
 }
 
-func (m *memory) FindTransfer(ctx context.Context, id valueobject.TransactionID) (aggregate.Transfer, error) {
+func save(table map[string]stored, transfer aggregate.Transfer, result dto.TransferResult) (dto.TransferResult, error) {
+	if old, ok := table[transfer.ID().String()]; ok {
+		if old.fingerprint != transfer.Fingerprint() {
+			return dto.TransferResult{}, errs.ErrConflict
+		}
+		return old.result, nil
+	}
+	table[transfer.ID().String()] = stored{fingerprint: transfer.Fingerprint(), result: result}
+	return result, nil
+}
+
+func (m *memory) Authorize(ctx context.Context, transfer aggregate.Transfer) (dto.TransferResult, error) {
 	if m.transferErr != nil {
-		return aggregate.Transfer{}, m.transferErr
+		return dto.TransferResult{}, m.transferErr
 	}
-	transfer, ok := m.transfers[id.String()]
-	if !ok {
-		return aggregate.Transfer{}, errs.ErrNotFound
-	}
-	return transfer, nil
+	m.authorized++
+	return save(m.transfers, transfer, dto.FromTransfer(transfer.WithReason(valueobject.ReasonNone)))
 }
 
-func (m *memory) Commit(ctx context.Context, authorization service.Authorization) error {
-	if m.commitErr != nil {
-		return m.commitErr
+func (m *memory) FindTransfer(ctx context.Context, id valueobject.TransactionID) (dto.TransferResult, error) {
+	if m.transferErr != nil {
+		return dto.TransferResult{}, m.transferErr
 	}
-	m.commits++
-	m.transfers[authorization.Transfer.ID().String()] = authorization.Transfer
-	if len(authorization.Entries) == 0 {
-		return nil
+	got, ok := m.transfers[id.String()]
+	if !ok {
+		return dto.TransferResult{}, errs.ErrNotFound
 	}
-	m.accounts[authorization.Source.ID().Int64()] = authorization.Source
-	m.accounts[authorization.Destination.ID().Int64()] = authorization.Destination
-	return nil
+	return got.result, nil
 }
 
 func (m *memory) FindAccount(ctx context.Context, id valueobject.AccountID) (aggregate.Account, error) {
-	m.accountCalls++
-	if m.accountErr != nil && m.accountCalls > m.failAccountAfter {
+	if m.accountErr != nil {
 		return aggregate.Account{}, m.accountErr
 	}
 	account, ok := m.accounts[id.Int64()]
@@ -86,21 +90,20 @@ func (m *memory) FindStatement(ctx context.Context, id valueobject.AccountID, af
 	return entity.NewStatement(m.rows, until, next)
 }
 
-func (m *memory) FindReceipt(ctx context.Context, id valueobject.TransactionID) (port.Receipt, error) {
+func (m *memory) FindReceipt(ctx context.Context, id valueobject.TransactionID) (dto.TransferResult, error) {
 	if m.receiptErr != nil {
-		return port.Receipt{}, m.receiptErr
+		return dto.TransferResult{}, m.receiptErr
 	}
-	receipt, ok := m.receipts[id.String()]
+	got, ok := m.receipts[id.String()]
 	if !ok {
-		return port.Receipt{}, errs.ErrNotFound
+		return dto.TransferResult{}, errs.ErrNotFound
 	}
-	return receipt, nil
+	return got.result, nil
 }
 
-func (m *memory) SaveReceipt(ctx context.Context, transfer aggregate.Transfer, result dto.TransferResult) error {
-	if m.receiptSaveErr != nil {
-		return m.receiptSaveErr
+func (m *memory) SaveReceipt(ctx context.Context, transfer aggregate.Transfer, result dto.TransferResult) (dto.TransferResult, error) {
+	if m.receiptErr != nil {
+		return dto.TransferResult{}, m.receiptErr
 	}
-	m.receipts[transfer.ID().String()] = port.Receipt{Transfer: transfer, Result: result}
-	return nil
+	return save(m.receipts, transfer, result)
 }

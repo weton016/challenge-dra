@@ -1,11 +1,17 @@
 GO ?= go
 PYTHON ?= python3
-export TEST_DATABASE_URL ?= postgres://pix:pix-local-only@localhost:55432/pix_test?sslmode=disable
-export DATABASE_URL ?= postgres://pix:pix-local-only@localhost:55432/pix?sslmode=disable
+export TEST_TB_ADDRESS ?= 127.0.0.1:3001
+export TB_ADDRESS ?= 127.0.0.1:3000
+# The TigerBeetle client archive is rejected by the new Apple linker.
+ifeq ($(shell uname -s),Darwin)
+export CGO_LDFLAGS ?= -Wl,-ld_classic
+endif
 
-.PHONY: up unit test acceptance coverage mutation structure qa audit seed load fmt
+.PHONY: up test-ledger unit test acceptance coverage mutation structure qa audit seed load fmt
 up:
-	docker compose up -d --build
+	docker compose up -d --build --wait
+test-ledger:
+	docker compose --profile test up -d --wait tigerbeetle-test
 fmt:
 	$(GO) fmt ./...
 unit:

@@ -7,15 +7,19 @@ import (
 	"dracma/pix/internal/domain/errs"
 )
 
-var transactionIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+// RFC 4122 variant only: the ledger derives its own ids with variant bits 11,
+// so a client id can never take the id of a settlement or decline record.
+var transactionIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 
 type TransactionID struct{ value string }
 
+// NewTransactionID accepts a UUID in any case and keeps it lowercase.
 func NewTransactionID(raw string) (TransactionID, error) {
-	if !transactionIDPattern.MatchString(raw) {
+	value := strings.ToLower(raw)
+	if !transactionIDPattern.MatchString(value) {
 		return TransactionID{}, errs.ErrInvalid
 	}
-	return TransactionID{value: raw}, nil
+	return TransactionID{value: value}, nil
 }
 
 func RefundID(original TransactionID) (TransactionID, error) {
@@ -23,22 +27,6 @@ func RefundID(original TransactionID) (TransactionID, error) {
 		return TransactionID{}, errs.ErrInvalid
 	}
 	return TransactionID{value: "refund:" + original.value}, nil
-}
-
-// ParseTransactionID accepts a client id or the internal refund: form.
-func ParseTransactionID(raw string) (TransactionID, error) {
-	if id, err := NewTransactionID(raw); err == nil {
-		return id, nil
-	}
-	const prefix = "refund:"
-	if !strings.HasPrefix(raw, prefix) {
-		return TransactionID{}, errs.ErrInvalid
-	}
-	original, err := NewTransactionID(strings.TrimPrefix(raw, prefix))
-	if err != nil {
-		return TransactionID{}, err
-	}
-	return RefundID(original)
 }
 
 func (id TransactionID) String() string { return id.value }

@@ -18,11 +18,7 @@ func (u GetTransfer) Execute(ctx context.Context, id string) (dto.TransferResult
 	if err != nil {
 		return dto.TransferResult{}, err
 	}
-	transfer, err := u.Transfers.FindTransfer(ctx, parsed)
-	if err != nil {
-		return dto.TransferResult{}, err
-	}
-	return dto.FromTransfer(transfer), nil
+	return u.Transfers.FindTransfer(ctx, parsed)
 }
 
 type GetBalance struct {

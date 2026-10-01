@@ -4,15 +4,12 @@ import (
 	"net/http"
 
 	"dracma/pix/internal/application/usecase"
-	"dracma/pix/internal/infrastructure/postgres"
-	"dracma/pix/internal/infrastructure/postgres/account"
-	"dracma/pix/internal/infrastructure/postgres/statement"
-	"dracma/pix/internal/infrastructure/postgres/transfer"
+	"dracma/pix/internal/infrastructure/tigerbeetle"
 	"dracma/pix/internal/presentation/httpapi/request"
 	"dracma/pix/internal/presentation/httpapi/response"
 )
 
-type Accounts struct{ Store *postgres.Store }
+type Accounts struct{ Ledger *tigerbeetle.Ledger }
 
 func (c Accounts) Balance(w http.ResponseWriter, r *http.Request) {
 	id, err := request.ParseAccountID(r.PathValue("id"))
@@ -20,7 +17,7 @@ func (c Accounts) Balance(w http.ResponseWriter, r *http.Request) {
 		response.Fail(w, err)
 		return
 	}
-	result, err := (usecase.GetBalance{Accounts: account.New(c.Store)}).Execute(r.Context(), id)
+	result, err := (usecase.GetBalance{Accounts: c.Ledger}).Execute(r.Context(), id)
 	if err != nil {
 		response.Fail(w, err)
 		return
@@ -44,18 +41,7 @@ func (c Accounts) Statement(w http.ResponseWriter, r *http.Request) {
 		response.Fail(w, err)
 		return
 	}
-	result, err := (usecase.GetStatement{Accounts: account.New(c.Store), Statements: statement.New(c.Store)}).Execute(r.Context(), id, after, until)
-	if err != nil {
-		response.Fail(w, err)
-		return
-	}
-	response.Write(w, http.StatusOK, result)
-}
-
-type Operations struct{ Store *postgres.Store }
-
-func (c Operations) Get(w http.ResponseWriter, r *http.Request) {
-	result, err := (usecase.GetTransfer{Transfers: transfer.New(c.Store)}).Execute(r.Context(), r.PathValue("id"))
+	result, err := (usecase.GetStatement{Accounts: c.Ledger, Statements: c.Ledger}).Execute(r.Context(), id, after, until)
 	if err != nil {
 		response.Fail(w, err)
 		return

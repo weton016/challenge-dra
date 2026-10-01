@@ -7,33 +7,31 @@ import (
 	"net/http"
 	"time"
 
-	"dracma/pix/internal/infrastructure/postgres"
+	"dracma/pix/internal/infrastructure/tigerbeetle"
 	"dracma/pix/internal/presentation/httpapi/controller"
 	"dracma/pix/internal/presentation/httpapi/response"
 )
 
 type API struct {
-	Store   *postgres.Store
-	Batch   *postgres.Batcher
+	Ledger  *tigerbeetle.Ledger
 	Key     string
 	Timeout time.Duration
 }
 
 func (a API) Handler(simulator bool) http.Handler {
 	mux := http.NewServeMux()
-	health := controller.Health{Store: a.Store}
+	health := controller.Health{Ledger: a.Ledger}
 	mux.HandleFunc("GET /healthz", health.Live)
 	mux.HandleFunc("GET /readyz", health.Ready)
 	if simulator {
-		sim := controller.Simulator{Store: a.Store}
+		sim := controller.Simulator{Ledger: a.Ledger}
 		mux.HandleFunc("POST /transfers", sim.Receive)
 		mux.HandleFunc("GET /transfers/{id}", sim.Receipt)
 	} else {
-		transfers := controller.Transfers{Batch: a.Batch, Store: a.Store}
-		accounts := controller.Accounts{Store: a.Store}
-		operations := controller.Operations{Store: a.Store}
+		transfers := controller.Transfers{Ledger: a.Ledger}
+		accounts := controller.Accounts{Ledger: a.Ledger}
 		mux.HandleFunc("POST /transfers", transfers.Post)
-		mux.HandleFunc("GET /transfers/{id}", operations.Get)
+		mux.HandleFunc("GET /transfers/{id}", transfers.Get)
 		mux.HandleFunc("GET /accounts/{id}/balance", accounts.Balance)
 		mux.HandleFunc("GET /accounts/{id}/statement", accounts.Statement)
 	}

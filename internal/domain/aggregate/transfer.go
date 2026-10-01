@@ -1,6 +1,9 @@
 package aggregate
 
 import (
+	"crypto/sha256"
+	"fmt"
+
 	"dracma/pix/internal/domain/errs"
 	"dracma/pix/internal/domain/policy"
 	"dracma/pix/internal/domain/valueobject"
@@ -95,33 +98,6 @@ func RestoreTransfer(transfer Transfer, decision valueobject.Decision, reason va
 	return transfer, nil
 }
 
-func (t Transfer) Refund() (Transfer, error) {
-	if t.external.String() == "" {
-		return Transfer{}, errs.ErrInvalid
-	}
-	id, err := valueobject.RefundID(t.id)
-	if err != nil {
-		return Transfer{}, err
-	}
-	return Transfer{id: id, source: t.destination, destination: t.source, amount: t.amount}, nil
-}
-
-func (t Transfer) Usable(source, destination Account) error {
-	if !source.currency.Equal(valueobject.BRL()) {
-		return errs.ErrInvalid
-	}
-	if !destination.currency.Equal(valueobject.BRL()) {
-		return errs.ErrInvalid
-	}
-	if source.id != t.source {
-		return errs.ErrInvalid
-	}
-	if destination.id != t.destination {
-		return errs.ErrInvalid
-	}
-	return nil
-}
-
 func (t Transfer) WithReason(reason valueobject.Reason) Transfer {
 	t.reason = reason
 	t.settlement = valueobject.SettlementInternal
@@ -136,30 +112,11 @@ func (t Transfer) WithReason(reason valueobject.Reason) Transfer {
 	return t
 }
 
-func (t Transfer) AcceptReplay(stored Transfer) error {
-	if t.id != stored.id {
-		return errs.ErrNotFound
-	}
-	if !t.samePayload(stored) {
-		return errs.ErrConflict
-	}
-	return nil
-}
-
-func (t Transfer) samePayload(other Transfer) bool {
-	if t.source != other.source {
-		return false
-	}
-	if t.destination != other.destination {
-		return false
-	}
-	if t.external != other.external {
-		return false
-	}
-	if t.amount != other.amount {
-		return false
-	}
-	return true
+// Fingerprint identifies the payload behind a transaction id. Two requests
+// with the same id and different fingerprints are an idempotency conflict.
+func (t Transfer) Fingerprint() [16]byte {
+	sum := sha256.Sum256(fmt.Appendf(nil, "%d|%d|%d|%s", t.source.Int64(), t.destination.Int64(), t.amount.Minor(), t.external.String()))
+	return [16]byte(sum[:16])
 }
 
 func (t Transfer) ID() valueobject.TransactionID      { return t.id }

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"dracma/pix/internal/application/dto"
@@ -24,16 +23,6 @@ func (u ReceiveExternal) Execute(ctx context.Context, cmd dto.TransferCommand) (
 	if transfer.External().String() == "" {
 		return dto.TransferResult{}, errs.ErrInvalid
 	}
-	stored, err := u.Receipts.FindReceipt(ctx, transfer.ID())
-	if err == nil {
-		if err = transfer.AcceptReplay(stored.Transfer); err != nil {
-			return dto.TransferResult{}, err
-		}
-		return stored.Result, nil
-	}
-	if !errors.Is(err, errs.ErrNotFound) {
-		return dto.TransferResult{}, err
-	}
 	result := dto.TransferResult{
 		ID:         transfer.ID().String(),
 		Decision:   valueobject.Approved.String(),
@@ -42,10 +31,7 @@ func (u ReceiveExternal) Execute(ctx context.Context, cmd dto.TransferCommand) (
 	if strings.HasPrefix(transfer.External().String(), "reject:") {
 		result.Decision = valueobject.Declined.String()
 	}
-	if err = u.Receipts.SaveReceipt(ctx, transfer, result); err != nil {
-		return dto.TransferResult{}, err
-	}
-	return result, nil
+	return u.Receipts.SaveReceipt(ctx, transfer, result)
 }
 
 type GetReceipt struct {
@@ -57,9 +43,5 @@ func (u GetReceipt) Execute(ctx context.Context, id string) (dto.TransferResult,
 	if err != nil {
 		return dto.TransferResult{}, err
 	}
-	stored, err := u.Receipts.FindReceipt(ctx, parsed)
-	if err != nil {
-		return dto.TransferResult{}, err
-	}
-	return stored.Result, nil
+	return u.Receipts.FindReceipt(ctx, parsed)
 }
