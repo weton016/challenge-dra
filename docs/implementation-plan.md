@@ -4,7 +4,7 @@ Design delivered in this conversation before the code: `design.md` and PDF. Emai
 
 ## Stages
 1. Record the skill, criteria, and design in a commit.
-2. Implement the Go monolith, schema/migrations, the financial transaction, balance/statement, and an outbox with an idempotent simulator.
+2. Implement the Go monolith, the financial transaction, balance/statement, and external delivery with an idempotent simulator. Since 2026-10-01 the ledger is TigerBeetle (`docs/decisions.md`).
 3. Implement unit tests and Gherkin acceptance, with a real database and concurrency.
 4. Automate the gates: internal coverage >= 85%, ledger 100%, financial mutants 100%, complexity <= 15, size, and dependencies.
 5. Run QA with the race detector; fix failures without weakening invariants.
@@ -15,7 +15,7 @@ Design delivered in this conversation before the code: `design.md` and PDF. Emai
 | Rule | Evidence |
 |---|---|
 | Unit tests | `go test`, validation/limit/decision tests |
-| Acceptance/Gherkin | Godog with HTTP and PostgreSQL |
+| Acceptance/Gherkin | Godog with HTTP and TigerBeetle |
 | Coverage | Go profiles and a per-package report |
 | Mutation testing | selected semantic mutants in the financial core |
 | Cyclomatic complexity | AST analysis of functions |
@@ -25,4 +25,4 @@ Design delivered in this conversation before the code: `design.md` and PDF. Emai
 | QA procedures | Makefile + CI pipeline + fault script |
 | Final tests | Compose, acceptance, faults, load, and audit |
 
-Test configuration uses a separate disposable database. Destructive scenarios never run against an arbitrary production URL. There is no automatic repository publication or email.
+Test configuration uses a separate disposable TigerBeetle cluster. Destructive scenarios never run against an arbitrary production URL. There is no automatic repository publication or email.

@@ -1,52 +1,67 @@
 {
   "scope": "selected financial semantic mutants",
-  "total": 9,
-  "killed": 9,
+  "total": 12,
+  "killed": 12,
   "results": [
     {
       "name": "allow-overdraft",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/less_than_balance (0.00s)\n        policy_test.go:30: got \"INSUFFICIENT_FUNDS\" want \"\"\n    --- FAIL: TestDecide/insufficient (0.00s)\n        policy_test.go:30: got \"\" want \"INSUFFICIENT_FUNDS\"\n    --- FAIL: TestDecide/empty (0.00s)\n        policy_test.go:30: got \"\" want \"INSUFFICIENT_FUNDS\"\n    --- FAIL: TestDecide/overflow (0.00s)\n        policy_test.go:30: got \"INSUFFICIENT_FUNDS\" want \"BALANCE_OVERFLOW\"\n    --- FAIL: TestDecide/exact_upper_bound (0.00s)\n        policy_test.go:30: got \"INSUFFICIENT_FUNDS\" want \"\"\nFAIL\n"
+      "evidence": "--- FAIL: TestAvailable (0.00s)\n    --- FAIL: TestAvailable/overdrawn (0.00s)\n        policy_test.go:31: got -1 true want 0 false\nFAIL\n"
     },
     {
       "name": "reject-exact-balance",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_balance (0.00s)\n        policy_test.go:30: got \"INSUFFICIENT_FUNDS\" want \"\"\nFAIL\n"
+      "evidence": "--- FAIL: TestAvailable (0.00s)\n    --- FAIL: TestAvailable/exact_balance_spent (0.00s)\n        policy_test.go:31: got 0 false want 0 true\n    --- FAIL: TestAvailable/reserved_counts (0.00s)\n        policy_test.go:31: got 0 false want 0 true\nFAIL\n"
     },
     {
       "name": "miss-overflow",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_balance (0.00s)\n        policy_test.go:30: got \"BALANCE_OVERFLOW\" want \"\"\n    --- FAIL: TestDecide/less_than_balance (0.00s)\n        policy_test.go:30: got \"BALANCE_OVERFLOW\" want \"\"\n    --- FAIL: TestDecide/overflow (0.00s)\n        policy_test.go:30: got \"\" want \"BALANCE_OVERFLOW\"\nFAIL\n"
+      "evidence": "--- FAIL: TestAvailable (0.00s)\n    --- FAIL: TestAvailable/above_int64 (0.00s)\n        policy_test.go:31: got -9223372036854775808 true want 0 false\nFAIL\n"
     },
     {
-      "name": "reject-exact-limit",
+      "name": "ignore-reserved",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/exact_upper_bound (0.00s)\n        policy_test.go:30: got \"BALANCE_OVERFLOW\" want \"\"\nFAIL\n"
+      "evidence": "--- FAIL: TestAvailable (0.00s)\n    --- FAIL: TestAvailable/reserved_counts (0.00s)\n        policy_test.go:31: got 60 true want 0 true\n    --- FAIL: TestAvailable/one_cent_left (0.00s)\n        policy_test.go:31: got 60 true want 1 true\n    --- FAIL: TestAvailable/overdrawn (0.00s)\n        policy_test.go:31: got 0 true want 0 false\nFAIL\n"
     },
     {
-      "name": "allow-zero",
+      "name": "add-posted-debits",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/zero (0.00s)\n        policy_test.go:30: got \"\" want \"INVALID_AMOUNT\"\nFAIL\n"
+      "evidence": "--- FAIL: TestAvailable (0.00s)\n    --- FAIL: TestAvailable/exact_balance_spent (0.00s)\n        policy_test.go:31: got 200 true want 0 true\n    --- FAIL: TestAvailable/reserved_counts (0.00s)\n        policy_test.go:31: got 80 true want 0 true\n    --- FAIL: TestAvailable/one_cent_left (0.00s)\n        policy_test.go:31: got 81 true want 1 true\n    --- FAIL: TestAvailable/posted_debit (0.00s)\n        policy_test.go:31: got 101 true want 99 true\n    --- FAIL: TestAvailable/overdrawn (0.00s)\n        policy_test.go:31: got 199 true want 0 false\n    --- FAIL: TestAvailable/large_history_small_balance (0.00s)\n        policy_test.go:31: got 0 false want 7 true\nFAIL\n"
     },
     {
-      "name": "allow-negative-source",
+      "name": "posted-debit-credits",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/negative_source (0.00s)\n        policy_test.go:30: got \"INSUFFICIENT_FUNDS\" want \"INVALID_AMOUNT\"\nFAIL\n"
+      "evidence": "--- FAIL: TestDelta (0.00s)\n    policy_test.go:55: movement 0 debit true: got 5 want -5\nFAIL\n"
     },
     {
-      "name": "allow-negative-destination",
+      "name": "posted-credit-lost",
       "status": "killed",
-      "evidence": "--- FAIL: TestDecide (0.00s)\n    --- FAIL: TestDecide/negative_destination (0.00s)\n        policy_test.go:30: got \"\" want \"INVALID_AMOUNT\"\nFAIL\n"
+      "evidence": "--- FAIL: TestDelta (0.00s)\n    policy_test.go:55: movement 0 debit false: got 0 want 5\nFAIL\n"
+    },
+    {
+      "name": "reserve-credits",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDelta (0.00s)\n    policy_test.go:55: movement 1 debit true: got 5 want -5\nFAIL\n"
+    },
+    {
+      "name": "capture-wrong-side",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDelta (0.00s)\n    policy_test.go:55: movement 2 debit true: got 5 want 0\nFAIL\n"
+    },
+    {
+      "name": "release-wrong-side",
+      "status": "killed",
+      "evidence": "--- FAIL: TestDelta (0.00s)\n    policy_test.go:55: movement 3 debit true: got 0 want 5\nFAIL\n"
     },
     {
       "name": "wrong-internal-target",
       "status": "killed",
-      "evidence": "--- FAIL: TestTarget (0.00s)\n    policy_test.go:38: internal target\nFAIL\n"
+      "evidence": "--- FAIL: TestTarget (0.00s)\n    policy_test.go:62: internal target\nFAIL\n"
     },
     {
       "name": "wrong-technical-shard",
       "status": "killed",
-      "evidence": "--- FAIL: TestTarget (0.00s)\n    policy_test.go:41: technical account\nFAIL\n"
+      "evidence": "--- FAIL: TestTarget (0.00s)\n    policy_test.go:65: technical account\nFAIL\n"
     }
   ]
 }

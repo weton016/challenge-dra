@@ -1,52 +1,63 @@
 # Autorizador Pix
 
-Monólito em Go que autoriza transferências em centavos de real. O PostgreSQL é a autoridade do saldo: uma aprovação grava duas partidas no mesmo `COMMIT`, uma recusa não grava nenhuma, e a mesma `transaction_id` não movimenta o saldo duas vezes.
+Monólito em Go que autoriza transferências em centavos de real. O TigerBeetle 0.17.9 é a autoridade do saldo. Uma aprovação é uma transferência de partidas dobradas gravada num único commit, e uma recusa não move saldo. A mesma `transaction_id` não movimenta o saldo duas vezes.
 
 ## Iniciar
 
-Pré-requisitos: Docker com Compose, Go 1.26, Python 3. Carga e falhas também precisam de k6.
+Pré-requisitos: Docker com Compose, Go 1.26 com cgo (o cliente do TigerBeetle é uma biblioteca C) e Python 3. Carga e falhas também precisam de k6.
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build --wait
 curl -fsS http://127.0.0.1:8080/readyz
 curl -fsS http://127.0.0.1:8081/readyz
 ```
 
-Sobe o PostgreSQL 16 em `127.0.0.1:55432`, duas APIs (`8080` e `8081`) e o simulador de destino externo. A chave local é `local-development-key`. `fsync` e `synchronous_commit` ficam ligados.
+Sobe:
 
-O schema nasce vazio. Para um teste manual, crie poucas contas. A carga de 2.000 req/s usa um milhão:
+- o TigerBeetle em `127.0.0.1:3000`, com volume `tbdata` e cache de 2 GiB (usa cerca de 4 GiB de RAM);
+- duas APIs (`8080` e `8081`);
+- o simulador de destino externo.
+
+A chave local é `local-development-key`. O TigerBeetle e as APIs precisam de `seccomp=unconfined` por causa do io_uring; o Compose já configura isso.
+
+Na primeira subida, as contas técnicas, as contas de sistema e a emissão fixa de `MaxInt64` centavos no tesouro são criadas sozinhas. Para um teste manual, crie poucas contas. A carga de 2.000 req/s usa um milhão:
 
 ```bash
 go run ./cmd/pix -seed 1000
 # carga: make seed
 ```
 
-Transferência interna de 1 centavo da conta 1 para a 2:
+Transferência interna de 1 centavo da conta 1 para a 2. A `transaction_id` é um UUID (RFC 4122, versão 1 a 8):
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8080/transfers \
   -H "Authorization: Bearer local-development-key" \
   -H "Content-Type: application/json" \
-  -d '{"transaction_id":"demo-1","source_id":1,"destination_id":2,"amount_minor":1}'
+  -d '{"transaction_id":"0190f3a2-7c1e-4d2b-9a6f-1234567890ab","source_id":1,"destination_id":2,"amount_minor":1}'
 ```
 
-A resposta `APPROVED` ou `DECLINED` só sai depois do `COMMIT`. Timeout ou `503` não é recusa financeira: repita a mesma `transaction_id` ou consulte `GET /transfers/demo-1`.
+A resposta `APPROVED` ou `DECLINED` só sai depois do commit no TigerBeetle. Timeout ou `503` não é recusa financeira: repita a mesma `transaction_id` ou consulte `GET /transfers/{id}`. Repetir o id com outro conteúdo devolve `409`.
 
 ## Testar
 
-`make qa` exige o Postgres do Compose no ar. Ele formata, roda `go vet`, testes com detector de corrida, cobertura, mutação e o limite estrutural. Os testes que usam banco truncam só `pix_test`.
+Os testes de integração usam um TigerBeetle descartável em modo `--development`, na porta `3001`, que só sobe com o perfil `test`. Cada teste usa contas e UUIDs aleatórios, porque o TigerBeetle não apaga dados.
 
 ```bash
-make unit          # regras de saldo, valor exato, estouro e validação
-make acceptance    # features/authorization.feature em HTTP e PostgreSQL reais
+make test-ledger   # sobe o cluster de teste
+make unit          # regras de saldo, valor exato, saldo disponível e validação
+make acceptance    # features/authorization.feature em HTTP e TigerBeetle reais
 make qa            # portão completo; relatórios em reports/
 ```
 
-![Cobertura interna 92,2% acima do limite de 85%, domínio e mutantes em 100%](docs/figures/qualidade.svg)
+`make qa` formata, roda `go vet`, testes com detector de corrida, cobertura, mutação e o limite estrutural. Na última execução (`reports/tigerbeetle-2026-10-01.md`):
 
-`reports/structure.json` passou no mesmo dia: complexidade ≤ 15, arquivo ≤ 350 linhas, pacote interno ≤ 1.200.
+- cobertura interna de 95,3% e do domínio de 100%;
+- 12 de 12 mutantes financeiros mortos;
+- nenhuma violação de complexidade, tamanho ou dependência.
 
-Falha injetada e auditoria usam o banco `pix`, separado de `pix_test`:
+No macOS, o Makefile põe `CGO_LDFLAGS=-Wl,-ld_classic`, porque o linker novo da Apple recusa o arquivo do cliente.
+
+Falha injetada e auditoria usam o cluster principal. A auditoria precisa de tráfego parado, porque o TigerBeetle não tem snapshot de leitura:
 
 ```bash
 python3 scripts/faults.py
@@ -55,74 +66,64 @@ make audit
 
 ## Carga com k6
 
-O script é `scripts/load.js`. Ele manda `POST /transfers` em chegada aberta para `http://localhost:8080` e `http://localhost:8081`, com a chave `local-development-key`. Cada pedido move 1 centavo. No modo `mixed`, a conta 1 alterna entre origem e destino; o par é `2 + (n % 999998)`, então o seed de um milhão de contas precisa existir antes.
+O script é `scripts/load.js`. Ele manda `POST /transfers` em chegada aberta, com a chave `local-development-key`, e cada pedido move 1 centavo. No modo `mixed`, a conta 1 alterna entre origem e destino; o par é `2 + (n % 999998)`, então o seed de um milhão de contas precisa existir antes.
 
-Suba o Compose, espere as duas APIs e semeie o banco `pix`:
-
-```bash
-docker compose up -d --build
-curl -fsS http://127.0.0.1:8080/readyz
-curl -fsS http://127.0.0.1:8081/readyz
-make seed
-```
-
-Para medir de novo a partir de saldo e volume limpos, apague o volume do Compose antes de subir:
+Para medir a partir de um ledger limpo:
 
 ```bash
 docker compose down -v
-docker compose up -d --build
-make seed
+docker compose up -d --build --wait
+make seed      # 1.000.000 contas, cerca de 10 s
+sleep 90       # deixa a compactação pós-seed assentar
 ```
 
-`make seed` cria 1.000.000 clientes e as 32 contas técnicas. Conta que já existe conserva o saldo.
-
-O ensaio de 15 segundos só confirma que o stack responde. O que vale é o de 10 minutos:
+O ensaio que passou rodou o k6 dentro da rede do Compose, falando direto com `api:8080` e `api2:8080`:
 
 ```bash
-k6 run -e DURATION=15s -e RATE=2000 -e MODE=mixed -e RUN_ID=warmup scripts/load.js
-k6 run -e DURATION=10m -e RATE=2000 -e MODE=mixed -e RUN_ID=ensaio-10m scripts/load.js
+docker run --rm --network drac-pix_default -v "$PWD":/work -w /work \
+  -e RATE=2000 -e DURATION=10m -e RUN_ID=ensaio-10m \
+  -e URLS=http://api:8080,http://api2:8080 grafana/k6 run scripts/load.js
 ```
 
-`make load` repete o ensaio de 10 minutos a 2.000 req/s com os padrões do script. O resumo sai em `reports/load-<RUN_ID>.json`. Com `RUN_ID=ensaio-10m`, o arquivo é `reports/load-ensaio-10m.json`.
+`make load` roda do host, passando pelo encaminhamento de portas do Docker Desktop (`localhost:8080,8081`). O resumo sai em `reports/load-<RUN_ID>.json`.
 
 | Variável | Padrão | Efeito |
 |---|---|---|
 | `RATE` | `2000` | Iterações pedidas por segundo |
 | `DURATION` | `10m` | Duração do k6 (`15s`, `5m`, `10m`) |
 | `MODE` | `mixed` | `mixed`, `in` (tudo entra na conta 1) ou `out` (tudo sai dela) |
-| `RUN_ID` | timestamp | Prefixo de cada `transaction_id` e nome do JSON |
-| `URLS` | as duas APIs | Lista separada por vírgula |
+| `RUN_ID` | timestamp | Nome do JSON |
+| `URLS` | as duas APIs no host | Lista separada por vírgula |
 | `API_KEY` | `local-development-key` | Bearer das requisições |
 | `COLD_RATE` | `0` | Segunda cena, entre contas frias, se for maior que zero |
+| `TB_BATCH_WINDOW` (Compose) | `5ms` | Janela em que a API junta criações num só pedido ao TigerBeetle; `0` desliga |
 
-O k6 só fecha com código 0 quando os quatro limiares passam: p99 abaixo de 300 ms, nenhuma falha HTTP, todo check com `decision` `APPROVED`, nenhuma iteração descartada. Código 99 significa limiar estourado; o JSON ainda é gravado. HTTP 200 é aprovação gravada. HTTP 503 é erro técnico (fila cheia ou espera além de 1,5 s): repita a mesma `transaction_id`. Status ausente é timeout do cliente (3 s) ou conexão fechada.
+O k6 só fecha com código 0 quando os quatro limiares passam: p99 abaixo de 300 ms, nenhuma falha HTTP, todo check com `decision` `APPROVED` e nenhuma iteração descartada. Código 99 significa limiar estourado; o JSON ainda é gravado. HTTP 503 é resultado desconhecido (espera além de 1,5 s): repita a mesma `transaction_id`. Status ausente é timeout do cliente (3 s) ou conexão fechada.
 
 ## Arquitetura
 
-Duas instâncias HTTP compartilham um PostgreSQL. O lote (até 64 pedidos, janela padrão de 15 ms) serializa a escrita da conta quente com `pg_advisory_xact_lock`. Destino externo debita a origem, credita uma de 32 contas técnicas e deixa a entrega na outbox; o worker fala com o simulador fora da transação financeira.
+Duas instâncias HTTP compartilham um cluster TigerBeetle de uma réplica. Não há lote de correção, fila nem lock na aplicação: o TigerBeetle verifica saldo (`debits_must_not_exceed_credits`) e id no mesmo commit, e cada evento de um pedido tem resultado próprio. A API só junta as criações de 5 ms num pedido, por vazão. Sem isso, o cliente manda cerca de uma transferência por pedido, e o custo por pedido travava o ledger.
 
-![Cliente nas duas APIs, ambas gravam no PostgreSQL, e a outbox segue para o simulador](docs/figures/arquitetura.svg)
+Destino externo grava, numa cadeia atômica, uma reserva (transferência pendente para uma de 32 contas técnicas) e a referência do destino em transferências-memo de valor zero. O worker varre as reservas sem liquidação, entrega ao simulador e lança `post` (SETTLED) ou `void` (REVERSED). O TigerBeetle resolve uma reserva no máximo uma vez, então o estorno não acontece duas vezes.
+
+Decisões e limites estão em `docs/decisions.md`.
 
 ## Design do sistema
 
-Quatro camadas. Quem está acima depende de quem está abaixo. O domínio só usa a biblioteca padrão e os próprios pacotes.
+Quatro camadas. Quem está acima depende de quem está abaixo. O domínio só usa a biblioteca padrão e os próprios pacotes; só a infraestrutura importa o cliente do TigerBeetle.
 
 ![Apresentação depende de aplicação e infraestrutura; as duas dependem do domínio](docs/figures/camadas.svg)
 
-## Fluxo do cliente ao banco
-
-Pedido misto na conta quente. Contas independentes não disputam a mesma linha; créditos e débitos da conta 1 disputam o lote.
-
-![Cinco passos do POST até a decisão, com APPROVED em duas partidas e DECLINED sem partidas](docs/figures/fluxo.svg)
-
 ## Última execução
 
-Arquivo `reports/load-camadas-reset-10m.json`, 30 set 2026, cerca de 16:21. k6 em chegada aberta, 2.000 req/s, 10 minutos, modo `mixed` nas portas 8080 e 8081.
+Arquivo `reports/load-tb-10m-mixed-innet.json`, 1 out 2026: 2.000 req/s por 10 minutos, modo `mixed`, k6 na rede do Compose. Os quatro limiares passaram:
 
-![p99 de 1.548 ms nos 10 minutos, acima da linha de 300 ms; o ensaio de 5 minutos ficou em 154 ms](docs/figures/latencia.svg)
+| Métrica | Valor |
+|---|---|
+| Requisições | 1.200.001 (2.000/s) |
+| p50 / p99 / máx. | 5,3 / 74,4 / 994 ms |
+| Falhas HTTP | 0 |
+| Checks `APPROVED` | 100% |
+| Iterações descartadas | 0 |
 
-![Oferta de 2.000 req/s, 1.972 concluídos e 1.949 aprovados](docs/figures/vazao.svg)
-
-![13.176 respostas 503, 3.083 iterações descartadas e 829 outros status](docs/figures/erros.svg)
-
-Os quatro limiares do k6 falharam: p99, erro HTTP, checks e iterações descartadas. A meta de 2.000 req/s com p99 abaixo de 300 ms não foi atingida neste ensaio de 10 minutos. O ensaio de 5 minutos, no mesmo cenário, passou e está no gráfico de latência em verde. Ele não substitui os 10 minutos.
+A mesma carga disparada do host deu p99 de 148 ms e nenhuma iteração descartada, mas teve 4 conexões fechadas (`EOF`) em 1,2 milhão. Por isso não passou. O relatório lista todas as execuções, inclusive as que falharam antes da janela de 5 ms e do cache de 2 GiB, e também as falhas injetadas e a auditoria: `reports/tigerbeetle-2026-10-01.md`.

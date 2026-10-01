@@ -1,0 +1,13 @@
+{
+  "run": "fault-4515f8b8b360",
+  "checks": {
+    "committed_response_lost_then_replayed": true,
+    "application_sigkill_recovered": true,
+    "ledger_unresponsive_retry": true,
+    "ledger_process_restart": true
+  },
+  "kill_initial_unknown": 0,
+  "ledger_pause_response_ms": 1506.29,
+  "expected_unique_operations": 203,
+  "passed": true
+}
