@@ -126,4 +126,10 @@ Arquivo `reports/load-tb-10m-mixed-innet.json`, 1 out 2026: 2.000 req/s por 10 m
 | Checks `APPROVED` | 100% |
 | Iterações descartadas | 0 |
 
-A mesma carga disparada do host deu p99 de 148 ms e nenhuma iteração descartada, mas teve 4 conexões fechadas (`EOF`) em 1,2 milhão. Por isso não passou. O relatório lista todas as execuções, inclusive as que falharam antes da janela de 5 ms e do cache de 2 GiB, e também as falhas injetadas e a auditoria: `reports/tigerbeetle-2026-10-01.md`.
+A mesma carga disparada do host deu p99 de 148 ms e nenhuma iteração descartada, mas teve 4 conexões fechadas (`EOF`) em 1,2 milhão. Por isso não passou. O ensaio que passou começou com o ledger limpo; num volume com uns 5 milhões de transferências, um teste de 60 s logo após reiniciar o TigerBeetle travou 10 s, e os 10 minutos não foram repetidos nesse volume.
+
+Depois da carga e das falhas injetadas, a auditoria passou: 1.000.000 de contas, nenhum saldo inválido, dinheiro conservado e 2.520.827 linhas de histórico conferidas.
+
+- PDF com gráficos de latência, vazão por minuto e requisições em voo, todos os ensaios, auditoria e falhas: [`output/pdf/ensaio-tigerbeetle-10m.pdf`](output/pdf/ensaio-tigerbeetle-10m.pdf). Para gerar de novo: `python3 reports/_build_tigerbeetle_pdf.py`, depois imprimir `reports/ensaio-tigerbeetle-10m.html` com o Chrome headless (`--print-to-pdf`).
+- Relatório completo, inclusive as execuções que falharam antes da janela de 5 ms e do cache de 2 GiB: `reports/tigerbeetle-2026-10-01.md`.
+- Os PDFs `ensaio-reset-10m.pdf` e `ensaio-camadas-10m.pdf` são do desenho anterior, com PostgreSQL, e ficam como histórico.

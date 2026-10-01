@@ -65,10 +65,8 @@ def svg_line(categories, values, y_max, color, ref=None, ref_label=None, width=6
     return "\n".join(parts)
 
 
-def svg_bars():
+def svg_bars(values=(13.2, 33.4, 132.1, 620.3), y_max=700):
     labels = ["Mediana", "p95", "p99", "Máximo"]
-    values = [13.2, 33.4, 132.1, 620.3]
-    y_max = 700
     width, height = 680, 250
     left, right, top, bottom = 44, 10, 18, 28
     plot_w = width - left - right
